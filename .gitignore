@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+.next/
+.turbo/
+.rollup.cache/
+.vite/
+
+# Native mobile build output
+DerivedData/
+*.xcuserstate
+xcuserdata/
+Pods/
+.gradle/
+local.properties
+*.iml
+
+# Test & coverage
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+.playwright/
+
+# Python (aggregation service, eval harness)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Model artifacts & eval data — never commit these
+*.onnx
+*.safetensors
+*.bin
+models/
+data/raw/
+data/labeled/
+!data/labeled/.gitkeep
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.shared.json
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
