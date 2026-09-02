@@ -1,0 +1,22 @@
+{
+  "name": "quorum",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A drop-in feedback layer for any app — capture what users want, cluster it, and hand engineering a spec.",
+  "license": "MIT",
+  "author": "Ryan Helgason",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "tsc --build",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "size": "npm run size --workspaces --if-present"
+  }
+}

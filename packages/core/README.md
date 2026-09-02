@@ -1,0 +1,35 @@
+# @quorum/core
+
+Headless core for [Quorum](../../README.md). Zero runtime dependencies.
+
+> **Status: types only.** This package currently defines the capture protocol
+> and configuration contract. Transport, offline queue, capture, and the state
+> machine implementation land in v0.1 — see [ROADMAP](../../docs/ROADMAP.md).
+>
+> Nothing here has been compiled yet; the toolchain isn't installed.
+
+## What lives here
+
+| Module | Contents |
+| --- | --- |
+| `protocol.ts` | The wire contract — envelope, event blocks, capture payload, ingest responses |
+| `config.ts` | `QuorumConfig` and friends. Every default is the safe default. |
+| `state.ts` | Panel state machine and the public event map |
+
+## Why the protocol lives in core
+
+It's the one contract shared by the web component, the framework wrappers, the
+native iOS and Android SDKs, the server-side ingest package, and the backend.
+Versioning it independently of any package means an old client in the wild
+stays valid: changes are additive-only within a major.
+
+The state machine is here for the same reason. Both `@quorum/web` and the
+native mobile UIs drive the same states, which is how the flow stays consistent
+across platforms without sharing rendering code.
+
+## The 15KB budget
+
+Core plus the nub must stay under 15KB gzipped, with the panel UI and snapshot
+machinery lazy-loaded on first interaction. That's a product requirement, not
+an optimization — frontend teams reject widgets on bundle size. Adding a
+runtime dependency to this package needs a very good reason.
