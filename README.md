@@ -12,10 +12,10 @@
 
 > ### Status: early, partially built
 >
-> **Working today** (588 tests, zero runtime dependencies):
+> **Working today** (644 tests, zero runtime dependencies):
 > `@quorum/core` — capture protocol, ULID idempotency keys, a durable bounded
-> offline queue, ingest transport with backoff and the full error table, PII
-> redaction, structured logging.
+> offline queue, ingest transport with backoff and the full error table, the
+> panel state machine, PII redaction, structured logging.
 > `@quorum/aggregate` — TF-IDF clustering, offline consolidation, explainable
 > ranking, provider-agnostic LLM and embedding layers.
 > `@quorum/node` — support-inbox/CSV import, exception capture, protocol
@@ -188,7 +188,7 @@ examples/
 Tests run on Node's built-in runner with zero dependencies:
 
 ```bash
-npm test            # 588 tests, no install required
+npm test            # 644 tests, no install required
 npm run demo        # import an example support inbox, print a ranked backlog
 npm run eval        # clustering baselines + rank agreement against the corpus
 ```

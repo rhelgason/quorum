@@ -31,7 +31,9 @@ widget required to see value.
 
 - [x] `@quorum/core` — protocol types, ULID ids, bounded offline queue, ingest
       transport implementing PROTOCOL.md's error table
-- [ ] Panel state machine implementation (types exist; logic does not)
+- [x] Panel state machine implementation — closing mid-submit is safe because
+      the queue persists first; a failed capture still submits; a failed submit
+      keeps the draft for retry
 - [x] `@quorum/node` — support-inbox, exception, and CSV ingest, plus the read
       API that turns them into a ranked list. **First**, not last. Identity is
       never guessed and re-running an import is a no-op

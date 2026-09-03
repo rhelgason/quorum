@@ -35,6 +35,12 @@ export type { QueueOptions, QueueStats, QueueStorage } from './queue.ts';
 export { backoffDelay, parseRetryAfter, Transport } from './transport.ts';
 export type { FlushResult, TransportOptions } from './transport.ts';
 
+export { Emitter } from './emitter.ts';
+export type { EmitterOptions, Listener } from './emitter.ts';
+
+export { PanelMachine } from './panel.ts';
+export type { PanelContext, PanelEvent, PanelOptions } from './panel.ts';
+
 export {
   consoleSink,
   createLogger,

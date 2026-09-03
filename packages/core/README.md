@@ -3,8 +3,8 @@
 Headless core for [Quorum](../../README.md). Zero runtime dependencies.
 
 > **Status: partially implemented.** The protocol, ULID ids, the bounded
-> offline queue, ingest transport, redaction, and logging all work and are
-> tested. DOM capture and the panel state machine are still types only — see
+> offline queue, ingest transport, the panel state machine, redaction, and
+> logging all work and are tested. DOM capture is the remaining piece — see
 > [ROADMAP](../../docs/ROADMAP.md).
 
 ## What lives here
@@ -17,8 +17,10 @@ Headless core for [Quorum](../../README.md). Zero runtime dependencies.
 | `transport.ts` | Ingest transport implementing PROTOCOL.md's error table, with jittered backoff |
 | `redact.ts` | PII pattern scanning |
 | `log.ts` | Structured logging and the console ring buffer |
+| `panel.ts` | The panel state machine — one flow, driven by web and native alike |
+| `emitter.ts` | Typed event emitter behind `quorum.on()`; isolates throwing handlers |
 | `config.ts` | `QuorumConfig` and friends. Every default is the safe default. |
-| `state.ts` | Panel state machine types and the public event map (types only) |
+| `state.ts` | Panel state and the public event map |
 
 ## Why the protocol lives in core
 
