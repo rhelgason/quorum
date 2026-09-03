@@ -39,6 +39,9 @@ widget required to see value.
       Lexical cannot bridge "add dark mode" ↔ "the app destroys my eyes at
       night", and `dark-mode` is the largest issue in the corpus.
 - [ ] Pluggable embedder interface, absent-by-default like the LLM provider
+- [x] Offline consolidation to repair online over-splitting — raises the
+      lexical ceiling from 5/10 to 6/10 and makes a high online threshold the
+      right default ([ADR-0018](adr/0018-two-tier-clustering-validated.md))
 - [ ] Structural grouping shipped as **regression alerting**, not as ranking:
       "12 reports from /receipts/scan, iOS 4.12.0, in 72 hours"
 - [x] Deterministic ranking: unique users × account weight × recency × growth,
@@ -93,8 +96,12 @@ track** — do not treat any threshold as tuned until that lands.
 - [ ] pgvector persistence for embeddings
 - [ ] Hybrid weights (lexical : semantic : structural) tuned on rank agreement
 - [x] Online leader-follower assignment with incremental centroids
-- [ ] Nightly HDBSCAN/Leiden re-consolidation → human-gated proposals
-- [ ] Merge/split UI, `locked` clusters
+- [x] Offline consolidation: agglomerative merge proposals, average linkage,
+      human-gated, with rejection memory and `locked` clusters respected
+      ([ADR-0018](adr/0018-two-tier-clustering-validated.md))
+- [ ] HDBSCAN/Leiden as an alternative offline pass (Python)
+- [ ] Split proposals — only merges are implemented
+- [ ] Merge/split review UI
 
 ## v0.5 — Close the loop
 

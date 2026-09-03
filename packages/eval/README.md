@@ -57,6 +57,7 @@ src/
   corpus.ts          loader + integrity validation
   hard-pairs.ts      per-trap scoring
   baselines.ts       degenerate floors + structural clusterers
+  consolidation.test.ts  does the offline tier repair fragmentation?
   task-metrics.ts    topKAgreement — the headline metric
   adapt.ts           corpus -> @quorum/aggregate input shapes
   report.ts          runners and text formatting (pure)
@@ -125,6 +126,31 @@ four pure clusters of two barely dents ARI, but divides its demand by four and
 drops all four off the front page. Optimize `topKAgreement`; use the clustering
 metrics to explain why it moved. See
 [ADR-0014](../../docs/adr/0014-rank-agreement-is-the-eval-target.md).
+
+### Offline consolidation
+
+Fragmentation is the diagnosed failure, so the offline tier targets it
+directly. Top-ten agreement, online threshold × offline consolidation
+threshold (average linkage):
+
+```
+  online          none   c=0.03  c=0.05  c=0.07
+  ------------------------------------------------
+  t=0.15           3/10     5       6       6
+  t=0.16           4/10     6       6       6
+  t=0.25           5/10     6       5       4
+```
+
+Best single-pass was 5/10; best two-tier is 6/10, reached from several
+starting points. Consolidation specifically rescues over-split configurations,
+which is what the online pass systematically produces — so **set the online
+threshold high and let the offline pass recover recall**.
+
+Adjacent cells swing between 3 and 6. On 161 items one cluster crossing the
+top-ten boundary moves the score by a whole point, so treat the direction and
+the ceiling as real and the exact values as noise. The tests assert ranges for
+that reason. See
+[ADR-0018](../../docs/adr/0018-two-tier-clustering-validated.md).
 
 ### The finding that changed the roadmap
 
