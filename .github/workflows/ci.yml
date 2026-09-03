@@ -17,13 +17,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+
+      # `npm install`, not `npm ci`: there is no committed lockfile yet, because
+      # the environment this was authored in has no registry access. The first
+      # contributor with network should run `npm install`, commit the resulting
+      # package-lock.json, add `cache: npm` to the step above, and switch this
+      # back to `npm ci`.
+      - run: npm install --no-audit --no-fund
+
+      # Tests need no dependencies at all — Node runs the TypeScript directly.
+      # Running them before typecheck means a dependency-resolution problem
+      # can't mask a real test failure.
+      - run: npm run test:coverage
+
       - run: npm run typecheck
       - run: npm run build
-      # Coverage thresholds are enforced, not reported: line 90 / branch 85 /
-      # function 90. node --test exits nonzero when they aren't met.
-      - run: npm run test:coverage
 
   # The 15KB budget is a product requirement, not an optimization — frontend
   # teams reject widgets on bundle size. This job is expected to fail the
@@ -36,6 +44,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npm run size

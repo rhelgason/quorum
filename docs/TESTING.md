@@ -25,6 +25,18 @@ contributor can clone, run tests, and land a fix without resolving a lockfile.
 It also removes a class of supply-chain risk from a package that will be
 embedded in thousands of production apps.
 
+### Typecheck needs dependencies; tests don't
+
+`npm test` runs with an empty `node_modules`. `npm run typecheck` needs
+`typescript` and `@types/node`, so run `npm install` first.
+
+> **No committed lockfile yet.** The environment this was authored in has no
+> npm registry access, so `package-lock.json` could not be generated with the
+> real dependency tree and an incomplete one would break `npm ci` confusingly.
+> CI uses `npm install`. First contributor with network: run `npm install`,
+> commit the lockfile, re-add `cache: npm` to the CI setup step, and switch CI
+> back to `npm ci`.
+
 ### Two constraints from type-stripping
 
 Node erases types rather than compiling them, so:

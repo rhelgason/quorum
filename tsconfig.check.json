@@ -1,0 +1,17 @@
+{
+  // Typecheck-everything config, including tests. Separate from the build
+  // graph (tsconfig.json → packages/*/tsconfig.json) because the build must
+  // not emit test files into dist — a published package shipping its own
+  // tests is noise, and the emitted .test.js also gets picked up by
+  // `node --test`, silently running every test twice.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": ["packages/*/src/**/*.ts"]
+}

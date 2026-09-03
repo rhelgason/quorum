@@ -4,5 +4,8 @@
     "rootDir": "src",
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts"]
+  // Build config: tests are typechecked by tsconfig.check.json at the root but
+  // never emitted, so they don't ship in the published package.
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }

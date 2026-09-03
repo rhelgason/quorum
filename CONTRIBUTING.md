@@ -9,10 +9,17 @@ invitation.
 
 ```bash
 nvm use            # Node 24, pinned in .nvmrc
-npm install        # npm workspaces; no pnpm/yarn required
+npm test           # needs no dependencies at all — Node runs the TypeScript
+npm install        # only needed for typecheck/build
 npm run typecheck
-npm run build
+npm run eval       # clustering baseline report
 ```
+
+**There is no committed lockfile yet** — see
+[TESTING.md](docs/TESTING.md#typecheck-needs-dependencies-tests-dont). If you
+have registry access, running `npm install` and committing
+`package-lock.json` (plus flipping CI back to `npm ci`) is a genuinely useful
+first contribution.
 
 ## Ground rules
 
