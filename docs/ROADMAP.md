@@ -29,7 +29,9 @@ team with 200 pieces of feedback still doesn't know what's important.
 Goal: a team imports their support inbox and gets a defensible top ten. No
 widget required to see value.
 
-- [ ] `@quorum/core` — types, protocol, offline queue, transport, state machine
+- [x] `@quorum/core` — protocol types, ULID ids, bounded offline queue, ingest
+      transport implementing PROTOCOL.md's error table
+- [ ] Panel state machine implementation (types exist; logic does not)
 - [ ] `@quorum/node` — support-inbox, exception, and CSV ingest. **First**, not last.
 - [ ] Ingest service + `submissions` table + presigned capture upload
 - [ ] LSH near-duplicate collapse (SimHash over character shingles)

@@ -12,14 +12,18 @@
 
 > ### Status: early, partially built
 >
-> **Working today** (291 tests, zero runtime dependencies):
-> PII redaction and structured logging (`@quorum/core`); TF-IDF clustering,
-> explainable ranking, and a provider-agnostic LLM layer (`@quorum/aggregate`);
-> a labeled corpus and evaluation harness (`@quorum/eval`).
+> **Working today** (412 tests, zero runtime dependencies):
+> `@quorum/core` — capture protocol, ULID idempotency keys, a durable bounded
+> offline queue, ingest transport with backoff and the full error table, PII
+> redaction, structured logging.
+> `@quorum/aggregate` — TF-IDF clustering, offline consolidation, explainable
+> ranking, provider-agnostic LLM and embedding layers.
+> `@quorum/eval` — labeled corpus, clustering and rank-agreement metrics.
 > `npm run eval` prints a ranked backlog from the corpus with no LLM involved.
 >
-> **Not built yet:** the widget, the SDKs, ingest, and the dashboard. The
-> integration snippets below describe the target API, not working software.
+> **Not built yet:** the widget, the framework wrappers, ingest server, and the
+> dashboard. The integration snippets below describe the target API, not
+> working software.
 >
 > Follow [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's shipping and
 > [`docs/adr/`](docs/adr/) for why. Three roadmap assumptions have already been
@@ -107,7 +111,7 @@ quorum-nub { --quorum-accent: #7c3aed; --quorum-radius: 12px; }
 ```
 docs/            architecture, data model, protocol, privacy, ADRs
 packages/
-  core/          @quorum/core      — protocol, PII redaction, structured logging
+  core/          @quorum/core      — protocol, ULID, offline queue, transport, redaction, logging
   aggregate/     @quorum/aggregate — clustering, ranking, LLM provider. Zero deps.
   eval/          @quorum/eval      — metrics, labeled corpus, baselines, scoring CLI
   web/           @quorum/web    — <quorum-nub> web component (planned)

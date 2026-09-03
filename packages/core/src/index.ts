@@ -1,9 +1,10 @@
 /**
  * `@quorum/core` — headless core.
  *
- * Implemented: the capture protocol contract, PII pattern redaction, and
- * structured logging. Transport, offline queue, capture, and the state machine
- * implementation land in v0.1; see `docs/ROADMAP.md`.
+ * Implemented: the capture protocol contract, PII pattern redaction,
+ * structured logging, ULID generation, the bounded offline queue, and ingest
+ * transport. DOM capture and the panel state machine land next; see
+ * `docs/ROADMAP.md`.
  *
  * Zero runtime dependencies, and it stays that way — core plus the nub have a
  * 15KB gzipped budget that CI enforces.
@@ -24,6 +25,15 @@ export type {
   RedactionRule,
   ScanResult,
 } from './redact.ts';
+
+export { createUlidFactory, isUlid, MAX_ULID_TIME, ulid, ulidTime } from './ulid.ts';
+export type { UlidOptions } from './ulid.ts';
+
+export { createMemoryStorage, OfflineQueue } from './queue.ts';
+export type { QueueOptions, QueueStats, QueueStorage } from './queue.ts';
+
+export { backoffDelay, parseRetryAfter, Transport } from './transport.ts';
+export type { FlushResult, TransportOptions } from './transport.ts';
 
 export {
   consoleSink,
