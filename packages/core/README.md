@@ -2,19 +2,23 @@
 
 Headless core for [Quorum](../../README.md). Zero runtime dependencies.
 
-> **Status: types only.** This package currently defines the capture protocol
-> and configuration contract. Transport, offline queue, capture, and the state
-> machine implementation land in v0.1 — see [ROADMAP](../../docs/ROADMAP.md).
->
-> Nothing here has been compiled yet; the toolchain isn't installed.
+> **Status: partially implemented.** The protocol, ULID ids, the bounded
+> offline queue, ingest transport, redaction, and logging all work and are
+> tested. DOM capture and the panel state machine are still types only — see
+> [ROADMAP](../../docs/ROADMAP.md).
 
 ## What lives here
 
 | Module | Contents |
 | --- | --- |
 | `protocol.ts` | The wire contract — envelope, event blocks, capture payload, ingest responses |
+| `ulid.ts` | Time-sortable, monotonic event ids that double as idempotency keys |
+| `queue.ts` | Bounded, durable offline queue; drops captures before envelopes |
+| `transport.ts` | Ingest transport implementing PROTOCOL.md's error table, with jittered backoff |
+| `redact.ts` | PII pattern scanning |
+| `log.ts` | Structured logging and the console ring buffer |
 | `config.ts` | `QuorumConfig` and friends. Every default is the safe default. |
-| `state.ts` | Panel state machine and the public event map |
+| `state.ts` | Panel state machine types and the public event map (types only) |
 
 ## Why the protocol lives in core
 

@@ -32,8 +32,15 @@ widget required to see value.
 - [x] `@quorum/core` — protocol types, ULID ids, bounded offline queue, ingest
       transport implementing PROTOCOL.md's error table
 - [ ] Panel state machine implementation (types exist; logic does not)
-- [ ] `@quorum/node` — support-inbox, exception, and CSV ingest. **First**, not last.
-- [ ] Ingest service + `submissions` table + presigned capture upload
+- [x] `@quorum/node` — support-inbox, exception, and CSV ingest, plus the read
+      API that turns them into a ranked list. **First**, not last. Identity is
+      never guessed and re-running an import is a no-op
+      ([ADR-0020](adr/0020-identity-is-never-guessed.md)); crashes group by
+      stack and underrank rather than let a retry loop own the roadmap
+      ([ADR-0021](adr/0021-unattributed-reports-underrank.md))
+- [ ] Ingest service + `submissions` table + presigned capture upload —
+      `@quorum/node` stores in memory and recomputes clusters on read, so
+      persistence and write-time assignment are what remain
 - [ ] LSH near-duplicate collapse (SimHash over character shingles)
 - [x] **Lexical clustering (TF-IDF cosine + leader-follower)** — shipped in
       `@quorum/aggregate`. Necessary, not sufficient: 5/10 rank agreement.
@@ -56,8 +63,10 @@ widget required to see value.
       ([ADR-0015](adr/0015-log-scaled-account-weight.md))
 - [x] Medoid labels — no LLM required, ever
       ([ADR-0016](adr/0016-llm-is-config-not-code.md))
-- [ ] Ranked dashboard with **score explainability** — every row shows why it
-      ranks where it does, and drills into the verbatim submissions
+- [x] **Score explainability** — every ranked row carries its component
+      breakdown, a one-line explanation, and the verbatim quotes behind it,
+      served by `@quorum/node`'s read API
+- [ ] Ranked dashboard on top of it — the UI, not the data
 
 Import-first is deliberate. It proves the claim on the customer's own data
 instead of asking them to collect for six months first.

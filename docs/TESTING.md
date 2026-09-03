@@ -32,6 +32,15 @@ The flat typecheck was clean in both cases.
 harness with nothing to publish, which is also why its deep relative imports
 into `@quorum/aggregate` are acceptable.
 
+`packages/node` is `noEmit` for the same mechanical reason and a different
+motivating one. It imports both `@quorum/core` and `@quorum/aggregate` sources
+by deep relative path, which is what lets `node --test` run it against an empty
+`node_modules`. It is not dev-only — it is a package we intend to publish — but
+it is a client for an ingest service that does not exist yet, so there is
+nothing lost by staying out of the emit graph until there is. It joins the
+build graph when `services/api` is real and the cross-package imports resolve
+through workspace links against built `dist` output.
+
 CLI entrypoints are excluded from coverage (`**/cli.ts`) and kept as thin
 shells over tested pure functions, so the threshold measures logic rather than
 console plumbing. `packages/eval/src/cli.ts` is the pattern: it holds no logic
