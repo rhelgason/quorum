@@ -16,6 +16,17 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
 
+    // Node 24 runs .ts directly via type stripping, which is how tests execute
+    // with zero dependencies. Two consequences, both enforced here:
+    //   - relative imports must carry a .ts extension (Node will not remap .js)
+    //   - only erasable syntax is allowed: no enum, namespace, parameter
+    //     properties, or decorators
+    // rewriteRelativeImportExtensions rewrites .ts -> .js on emit, so published
+    // output is still normal ESM. Requires TypeScript >= 5.8.
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

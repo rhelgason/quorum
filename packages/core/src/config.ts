@@ -7,7 +7,7 @@
  * when configured correctly is unsafe, because it will be misconfigured.
  */
 
-import type { SubmissionKind } from './protocol.js';
+import type { SubmissionKind } from './protocol.ts';
 
 export interface CaptureConfig {
   /** rrweb-style DOM snapshot on web. Default: true. */
