@@ -32,14 +32,25 @@ The flat typecheck was clean in both cases.
 harness with nothing to publish, which is also why its deep relative imports
 into `@quorum/aggregate` are acceptable.
 
-`packages/node` is `noEmit` for the same mechanical reason and a different
-motivating one. It imports both `@quorum/core` and `@quorum/aggregate` sources
-by deep relative path, which is what lets `node --test` run it against an empty
-`node_modules`. It is not dev-only — it is a package we intend to publish — but
-it is a client for an ingest service that does not exist yet, so there is
-nothing lost by staying out of the emit graph until there is. It joins the
-build graph when `services/api` is real and the cross-package imports resolve
-through workspace links against built `dist` output.
+`packages/node` and `packages/web` are `noEmit` for the same mechanical reason
+and a different motivating one. Both import `@quorum/core` (and, for `node`,
+`@quorum/aggregate`) sources by deep relative path, which is what lets
+`node --test` run them against an empty `node_modules`. Neither is dev-only —
+both are packages we intend to publish — but `@quorum/node` is a client for an
+ingest service that does not exist yet, and `@quorum/web` has not been run in a
+browser, so nothing is lost by staying out of the emit graph until those change.
+They join the build graph when `services/api` is real and the cross-package
+imports resolve through workspace links against built `dist` output.
+
+`packages/web` is the one place this test setup cannot reach. Its pure modules
+— attribute parsing, presets, shortcut matching, panel copy — are fully tested,
+but `nub.ts` binds to the DOM and **has never been executed**: there is no
+browser runner and no bundler here. It is excluded from the coverage gate like
+`cli.ts`, and unlike `cli.ts` it is big enough that the exclusion is hiding a
+real gap rather than trimming console plumbing. A hand-written DOM shim was
+considered and rejected — a shim that lies gives false confidence, which is
+worse than an honest hole. What it needs is `@web/test-runner` or Playwright,
+plus a bundler for the 15KB size gate.
 
 CLI entrypoints are excluded from coverage (`**/cli.ts`) and kept as thin
 shells over tested pure functions, so the threshold measures logic rather than

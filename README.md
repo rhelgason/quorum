@@ -12,7 +12,7 @@
 
 > ### Status: early, partially built
 >
-> **Working today** (712 tests, zero runtime dependencies):
+> **Working today** (785 tests, zero runtime dependencies):
 > `@quorum/core` — capture protocol, ULID idempotency keys, a durable bounded
 > offline queue, ingest transport with backoff and the full error table, the
 > panel state machine, PII redaction, structured logging.
@@ -24,8 +24,12 @@
 > `@quorum/eval` — labeled corpus, clustering and rank-agreement metrics.
 > `npm run eval` prints a ranked backlog from the corpus with no LLM involved.
 >
-> **Not built yet:** the widget, the framework wrappers, a persistent ingest
-> server, and the dashboard. `@quorum/node` stores in memory and recomputes on
+> **Partly built:** `@quorum/web` — the `<quorum-nub>` element is written and
+> its pure layer is tested, but the DOM layer has never run in a browser here.
+> Treat it as a draft; see [its README](packages/web/README.md).
+>
+> **Not built yet:** the framework wrappers, a persistent ingest server, and
+> the dashboard. `@quorum/node` stores in memory and recomputes on
 > read. The web integration snippets below describe the target API, not working
 > software.
 >
@@ -178,7 +182,7 @@ packages/
   aggregate/     @quorum/aggregate — clustering, ranking, LLM provider. Zero deps.
   node/          @quorum/node      — import, exception capture, protocol ingest, ranked read API
   eval/          @quorum/eval      — metrics, labeled corpus, baselines, scoring CLI
-  web/           @quorum/web    — <quorum-nub> web component (planned)
+  web/           @quorum/web       — <quorum-nub> element. Pure layer tested; DOM layer unverified.
   react/         @quorum/react  — hooks + wrapper (planned)
 services/
   api/           persistent ingest + HTTP read API (planned)
@@ -189,7 +193,7 @@ examples/
 Tests run on Node's built-in runner with zero dependencies:
 
 ```bash
-npm test            # 712 tests, no install required
+npm test            # 785 tests, no install required
 npm run demo        # import an example support inbox, print a ranked backlog
 npm run eval        # clustering baselines + rank agreement against the corpus
 ```

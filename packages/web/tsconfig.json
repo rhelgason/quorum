@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    // noEmit and outside the build graph, same posture as packages/node and
+    // packages/eval: cross-package imports are source-relative so `node --test`
+    // runs against an empty node_modules. See docs/TESTING.md.
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}

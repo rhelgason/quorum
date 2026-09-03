@@ -85,8 +85,12 @@ simplification is gone.
 Every item here exists because it produces a ranking signal a plain feedback
 form can't.
 
-- [ ] `@quorum/web` — `<quorum-nub>`, three presets, shadow DOM, ≤15KB gzipped
-- [ ] Entrypoints: nub, keyboard shortcut, programmatic `open()`
+- [~] `@quorum/web` — `<quorum-nub>`, three presets, shadow DOM. Written; the
+      pure layer is tested and the DOM layer has never run. **Needs a browser
+      test runner before it can be called done**, and the ≤15KB budget is
+      unmeasured because there is no bundler yet
+- [~] Entrypoints: nub, keyboard shortcut, programmatic `open()` — written,
+      shortcut matching and attribute parsing tested, wiring unverified
 - [ ] `identify()` and account weighting plumbed end to end — this is what makes
       ranking revenue-weighted instead of a popularity contest
 - [ ] Route and version tagging on every submission (the structural signal)

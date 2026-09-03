@@ -1,0 +1,15 @@
+{
+  "name": "@quorum/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The <quorum-nub> web component for Quorum: shadow DOM, three presets, CSS custom property theming. Zero runtime dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {},
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
