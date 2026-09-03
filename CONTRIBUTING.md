@@ -33,6 +33,9 @@ and a PR that violates one will be sent back with a link rather than a debate.
 - **No new datastore.** Postgres + pgvector until measurements say otherwise.
 - **Offline clustering proposes, never applies.** Auto-applied merges undo
   human curation and permanently destroy trust in the tool.
+- **Clustering changes come with eval numbers.** Run `npm run eval` before and
+  after. A change that improves aggregate ARI while losing hard pairs is a
+  regression, not an improvement.
 
 ## Where help is most welcome
 
@@ -40,11 +43,12 @@ Framework wrappers (Vue, Svelte, Angular) are thin, well-scoped, and
 deliberately not on our roadmap — see
 [ROADMAP.md](docs/ROADMAP.md). They're the ideal outside contribution.
 
-Also valuable: real-world feedback corpora for the clustering eval set. The
-hand-labeled ground truth described in
-[DATA-MODEL.md](docs/DATA-MODEL.md#8-evaluation) is the highest-leverage
-missing artifact in the project, and every tuning knob is unfalsifiable
-without it.
+**Real labeled feedback data** is the highest-leverage contribution in the
+project. [`packages/eval`](packages/eval/README.md) has a working harness and a
+161-item corpus, but that corpus is synthetic — the same judgment wrote both
+the items and the labels, so it can validate an implementation and not an
+approach. Real data drops into the same schema and everything downstream works
+unchanged.
 
 ## Commits and ADRs
 

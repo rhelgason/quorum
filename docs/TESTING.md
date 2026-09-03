@@ -11,7 +11,13 @@ npm test              # node --test, discovers **/*.test.ts
 npm run test:watch
 npm run test:coverage # enforces line 90 / branch 85 / function 90
 npm run check         # typecheck + coverage — what CI runs
+npm run eval          # clustering baseline report (packages/eval)
 ```
+
+CLI entrypoints are excluded from coverage (`**/cli.ts`) and kept as thin
+shells over tested pure functions, so the threshold measures logic rather than
+console plumbing. `packages/eval/src/cli.ts` is the pattern: it holds no logic
+that `report.ts` doesn't expose and test.
 
 That choice isn't only convenience. `@quorum/core` has a hard zero-runtime-deps
 rule and a 15KB budget; keeping the dev toolchain equally spare means a

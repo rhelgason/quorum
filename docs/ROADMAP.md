@@ -9,8 +9,15 @@ screenshot inbox — an ordered answer to "what should we build next," with the
 evidence behind each row.
 
 That rules out the tempting build order where aggregation waits for volume. A
-team with 200 pieces of feedback still doesn't know what's important, and
-structural grouping answers that with no ML at all.
+team with 200 pieces of feedback still doesn't know what's important.
+
+> **Revised after measurement.** v0.1 originally assumed structural grouping
+> (route + version + burst) alone would produce that ranked list. The eval
+> harness says otherwise: precision 1.000 on release-burst bug clusters, but
+> ARI 0.023 on feature requests, which are the majority of what ranking is for.
+> Structural grouping ships as regression *detection*; the ranked list needs
+> text similarity. See
+> [ADR-0013](adr/0013-structural-clustering-is-a-regression-detector.md).
 
 ## v0.1 — A ranked list from data you already have
 
@@ -21,7 +28,10 @@ widget required to see value.
 - [ ] `@quorum/node` — support-inbox, exception, and CSV ingest. **First**, not last.
 - [ ] Ingest service + `submissions` table + presigned capture upload
 - [ ] LSH near-duplicate collapse (SimHash over character shingles)
-- [ ] Structural grouping: route + app version + temporal burst
+- [ ] **Lexical clustering (BM25 / TF-IDF)** — has to carry the ranked list now
+      that structural grouping is known not to
+- [ ] Structural grouping shipped as **regression alerting**, not as ranking:
+      "12 reports from /receipts/scan, iOS 4.12.0, in 72 hours"
 - [ ] Deterministic ranking: unique users × account weight × recency × growth
 - [ ] Medoid labels + TF-IDF tags — no LLM, no embeddings
 - [ ] Ranked dashboard with **score explainability** — every row shows why it
@@ -29,6 +39,10 @@ widget required to see value.
 
 Import-first is deliberate. It proves the claim on the customer's own data
 instead of asking them to collect for six months first.
+
+Open risk: if lexical clustering also underperforms on the eval corpus, local
+embeddings move from v0.4 into v0.1 and the "no ML in v1" simplification is
+gone. Measure before committing to the simpler story.
 
 ## v0.2 — Capture that feeds better ranking
 
@@ -56,8 +70,10 @@ form can't.
 
 ## v0.4 — Semantic clustering
 
-Gated on the eval harness having real labeled data. Do not tune thresholds
-before that exists — see [`packages/eval`](../packages/eval/README.md).
+The harness exists ([`packages/eval`](../packages/eval/README.md)) but its
+corpus is synthetic, which validates implementations rather than approaches.
+**Replacing it with real labeled data is the highest-leverage task in this
+track** — do not treat any threshold as tuned until that lands.
 
 - [ ] Local sentence embeddings + pgvector
 - [ ] Hybrid similarity (BM25 + cosine + structural), weights tuned on eval

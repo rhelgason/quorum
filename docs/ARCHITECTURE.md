@@ -31,9 +31,10 @@ viewed from two ends.
 
 The practical consequence, versus the obvious build order: aggregation can't be
 deferred until "we have volume." A team with 200 pieces of feedback still
-doesn't know what's important, and structural grouping (route, version, burst)
-gives them an answer with no ML at all. Ranking ships in v0.1, not v0.4.
-See [ADR-0012](adr/0012-prioritization-is-the-product.md).
+doesn't know what's important. Ranking ships in v0.1, not v0.4
+([ADR-0012](adr/0012-prioritization-is-the-product.md)) — though *how* it
+groups had to be revised once the eval harness had something to say
+([ADR-0013](adr/0013-structural-clustering-is-a-regression-detector.md)).
 
 ## System shape
 
@@ -226,13 +227,18 @@ entirely achievable; the LLM is needed only for the last mile.
 2. **Hybrid similarity.** Lexical (BM25) + semantic (embedding cosine) +
    structural. Lexical alone misses paraphrase; embeddings alone over-merge
    (they will happily fuse "dark mode" and "light mode").
-3. **Structural signals may be the best ones we have.** Route/screen, app
+3. **Structural signals are powerful, but only for defects.** Route/screen, app
    version, OS, device, temporal burst, co-voting. Ten rage shakes from
-   `/checkout/payment` is a cluster before anyone reads a word. Feedback that
-   clusters on one screen *and* one version is a regression, not a feature
-   request — classifiable with zero NLP. **If we shipped only route + version +
-   burst clustering and no text analysis at all, we'd have something useful.
-   That is v1.**
+   `/checkout/payment` is a cluster before anyone reads a word, and feedback
+   that clusters on one screen *and* one version is a regression — classifiable
+   with zero NLP.
+
+   Measured on the eval corpus, this holds strongly for bugs
+   (precision 1.000 on release-burst clusters) and **fails completely for
+   feature requests** (ARI 0.023). A defect lives at one place in the product;
+   a want does not. So structural grouping ships as regression *detection*, not
+   as the ranking mechanism — see
+   [ADR-0013](adr/0013-structural-clustering-is-a-regression-detector.md).
 4. **Two-tier clustering.** Online leader-follower assignment against stored
    centroids (O(1) per item, stable by construction, real-time); offline
    HDBSCAN/Leiden re-consolidation that *proposes* merges and splits for human

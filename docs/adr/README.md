@@ -20,6 +20,7 @@ Format: Context → Decision → Consequences → Reversal cost.
 | [0010](0010-never-interrupt-the-frustrated-user.md) | Never interrupt the frustrated user | Accepted |
 | [0011](0011-no-public-roadmap.md) | No public roadmap or end-user portal | Accepted · amends 0003 |
 | [0012](0012-prioritization-is-the-product.md) | Prioritization is the product; bug capture is an input | Accepted · amends 0003, 0005 |
+| [0013](0013-structural-clustering-is-a-regression-detector.md) | Structural clustering is a regression detector, not a ranker | Accepted · amends 0012 |
 
 New ADRs: copy 0001's shape, take the next number, don't edit an accepted one —
 supersede it with a new record and update the table.

@@ -1,0 +1,145 @@
+{
+  "$comment": "Adversarial pairs. Aggregate metrics hide these — a pipeline can score ARI 0.85 while getting every one of them wrong, because they are individually small. Each pair names a specific way clustering fails, so a regression points at a cause rather than a number.",
+  "pairs": [
+    {
+      "a": "s001",
+      "b": "s002",
+      "sameCluster": true,
+      "trap": "paraphrase-no-overlap",
+      "note": "'Please add a dark mode' vs 'the app destroys my eyes at night'. Zero content-word overlap. Pure lexical methods must fail this; it is the case embeddings exist to solve."
+    },
+    {
+      "a": "s001",
+      "b": "s003",
+      "sameCluster": true,
+      "trap": "abstraction-gap",
+      "note": "A named feature vs a confused observation of its absence. Different kinds (feature_request vs question) — so any rule that refuses to cluster across `kind` breaks here."
+    },
+    {
+      "a": "s002",
+      "b": "s011",
+      "sameCluster": false,
+      "trap": "shared-symptom",
+      "note": "Both are eye-strain complaints on the same iOS screen and version. Dark mode and text scaling are different work. Embeddings over-merge these; structural signals actively make it worse."
+    },
+    {
+      "a": "s009",
+      "b": "s014",
+      "sameCluster": false,
+      "trap": "shared-symptom",
+      "note": "Same trap, web side, both phrased as an accessibility need."
+    },
+    {
+      "a": "s016",
+      "b": "s024",
+      "sameCluster": false,
+      "trap": "feature-vs-bug-same-nouns",
+      "note": "'Need to export all expenses to CSV' vs 'CSV export is missing the last row'. Maximum lexical AND semantic overlap, same route, same version. One is unbuilt work, the other is a defect in shipped work. The single most instructive failure in the corpus."
+    },
+    {
+      "a": "s021",
+      "b": "s027",
+      "sameCluster": false,
+      "trap": "feature-vs-bug-same-nouns",
+      "note": "Harder variant: neither says 'CSV export' plainly, both are about spreadsheet rows."
+    },
+    {
+      "a": "s018",
+      "b": "s054",
+      "sameCluster": false,
+      "trap": "shared-token-bulk",
+      "note": "'bulk export' vs 'bulk approve'. A cheap TF-IDF method keys on 'bulk' and merges them."
+    },
+    {
+      "a": "s028",
+      "b": "s034",
+      "sameCluster": false,
+      "trap": "capability-vs-discoverability",
+      "note": "'We need GBP support' vs 'where do I change the currency?'. One is engineering work, one is a UX/docs fix. Very common in real corpora and almost always merged."
+    },
+    {
+      "a": "s030",
+      "b": "s035",
+      "sameCluster": false,
+      "trap": "capability-vs-discoverability",
+      "note": "Same trap where the second explicitly acknowledges the feature exists — the distinguishing evidence is present in the text, so a good method should get this one."
+    },
+    {
+      "a": "s084",
+      "b": "s090",
+      "sameCluster": false,
+      "trap": "same-surface-different-defect",
+      "note": "OCR accuracy vs scanner crash. Identical route, platform, and version. Structural clustering alone MUST merge these — this pair is the corpus proving where route+version grouping stops being sufficient."
+    },
+    {
+      "a": "s086",
+      "b": "s094",
+      "sameCluster": false,
+      "trap": "same-surface-different-defect",
+      "note": "Same trap, both phrased as 'scan doesn't work properly'."
+    },
+    {
+      "a": "s080",
+      "b": "s110",
+      "sameCluster": false,
+      "trap": "shared-domain-auth",
+      "note": "SSO request vs post-reset login loop. Both auth, both near /login. Unrelated work."
+    },
+    {
+      "a": "s090",
+      "b": "s096",
+      "sameCluster": true,
+      "trap": "structural-slam-dunk",
+      "note": "Same route, platform, version, and a 3-day burst window. If structural grouping cannot get this, it is broken."
+    },
+    {
+      "a": "s093",
+      "b": "s095",
+      "sameCluster": true,
+      "trap": "terse-vs-verbose",
+      "note": "'Camera opens for a second then Northwind quits' vs 'scanner crash, iOS 18.2, iPhone 14'. Same defect; one is prose, one is a log line."
+    },
+    {
+      "a": "s135",
+      "b": "s084",
+      "sameCluster": false,
+      "trap": "praise-vs-complaint",
+      "note": "Both about the scanner, same route and platform, opposite sentiment. Topic similarity says merge; a ranked list that buries a real complaint inside a praise cluster is actively harmful."
+    },
+    {
+      "a": "s043",
+      "b": "s045",
+      "sameCluster": true,
+      "trap": "symptom-vs-consequence",
+      "note": "'app is useless underground' vs 'lost an expense because I had no signal'. Same missing capability, described from opposite ends."
+    },
+    {
+      "a": "s003",
+      "b": "s131",
+      "sameCluster": false,
+      "trap": "vague-bridge",
+      "note": "Two vague complaints ('why is everything so white', 'the statuses are confusing'). Both low-information. Single-linkage chaining connects unrelated clusters through pairs exactly like this — the reason ADR-0005 rejects connected components."
+    },
+    {
+      "a": "s005",
+      "b": "s001",
+      "sameCluster": true,
+      "trap": "same-user-refile",
+      "note": "u_014 filed both, twelve days apart, in different words. Should cluster, and must count as ONE user in ranking."
+    },
+    {
+      "a": "s008",
+      "b": "s012",
+      "sameCluster": false,
+      "trap": "same-user-different-need",
+      "note": "u_071 filed both from the same screen: system appearance vs Dynamic Type. Same user and route is not evidence of the same issue."
+    },
+    {
+      "a": "s102",
+      "b": "s104",
+      "sameCluster": true,
+      "trap": "symptom-vs-diagnosis",
+      "note": "'dated the 3rd shows as the 2nd' vs 'Timezone bug, I'm in Sydney'. One reports the symptom, one names the cause."
+    }
+  ]
+}

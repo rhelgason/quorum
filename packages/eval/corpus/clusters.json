@@ -1,0 +1,226 @@
+{
+  "$comment": "Ground-truth canonical issues for the Northwind corpus. See README.md for what this corpus can and cannot validate.",
+  "product": {
+    "name": "Northwind",
+    "description": "Fictional team expense and receipt app, web + iOS. Invented so corpus items can be internally consistent about routes, versions, and feature names.",
+    "routes": [
+      "/dashboard",
+      "/expenses",
+      "/expenses/new",
+      "/receipts/scan",
+      "/reports",
+      "/approvals",
+      "/settings",
+      "/settings/billing",
+      "/team",
+      "/login"
+    ],
+    "iosScreens": [
+      "ReceiptScannerView",
+      "ExpenseListView",
+      "NewExpenseView",
+      "ApprovalsView",
+      "SettingsView"
+    ],
+    "versions": ["4.9.0", "4.10.0", "4.11.0", "4.12.0", "4.12.1"],
+    "releases": {
+      "4.12.0": "2026-08-11",
+      "4.12.1": "2026-08-24"
+    }
+  },
+  "clusters": [
+    {
+      "id": "dark-mode",
+      "title": "Dark theme respecting the OS appearance setting",
+      "kind": "feature_request",
+      "difficulty": "hard",
+      "note": "The flagship abstraction-lift test. Members range from the literal ('add dark mode') to the symptomatic ('hurts my eyes at night') to the confused ('why is everything white'). Lexical overlap between the extremes is near zero, so anything BM25-only will split this."
+    },
+    {
+      "id": "larger-font-accessibility",
+      "title": "Respect OS text-size settings / larger type",
+      "kind": "feature_request",
+      "difficulty": "hard",
+      "note": "Adversarial neighbour of dark-mode. Both are visual-accessibility complaints phrased as eye strain, and embeddings tend to fuse them. They are different work items."
+    },
+    {
+      "id": "csv-export",
+      "title": "Bulk export of expenses to CSV/spreadsheet",
+      "kind": "feature_request",
+      "difficulty": "easy",
+      "note": "High lexical cohesion. Should be easy for any method."
+    },
+    {
+      "id": "bug-csv-export-last-row",
+      "title": "CSV export omits the final row",
+      "kind": "bug",
+      "difficulty": "hard",
+      "note": "Adversarial neighbour of csv-export: maximum lexical overlap, completely different work. An over-merge here is the single most instructive failure in the corpus."
+    },
+    {
+      "id": "multi-currency",
+      "title": "Submit and report expenses in non-USD currencies",
+      "kind": "feature_request",
+      "difficulty": "medium"
+    },
+    {
+      "id": "confusion-where-currency-setting",
+      "title": "Users cannot find the existing currency setting",
+      "kind": "question",
+      "difficulty": "hard",
+      "note": "Adversarial neighbour of multi-currency. Discoverability, not a missing capability — the fix is UX, not engineering. Subtle and very common in real corpora."
+    },
+    {
+      "id": "recurring-expenses",
+      "title": "Recurring / subscription expenses",
+      "kind": "feature_request",
+      "difficulty": "easy"
+    },
+    {
+      "id": "offline-mode",
+      "title": "Create expenses offline and sync later",
+      "kind": "feature_request",
+      "difficulty": "medium"
+    },
+    {
+      "id": "slack-integration",
+      "title": "Slack notifications and approvals",
+      "kind": "feature_request",
+      "difficulty": "easy"
+    },
+    {
+      "id": "bulk-approvals",
+      "title": "Approve or reject multiple expenses at once",
+      "kind": "feature_request",
+      "difficulty": "medium",
+      "note": "Shares the token 'bulk' with csv-export. A cheap lexical method will confuse them."
+    },
+    {
+      "id": "custom-categories",
+      "title": "Custom expense categories per team",
+      "kind": "feature_request",
+      "difficulty": "easy"
+    },
+    {
+      "id": "mileage-tracking",
+      "title": "Mileage and per-mile reimbursement",
+      "kind": "feature_request",
+      "difficulty": "easy"
+    },
+    {
+      "id": "split-by-project",
+      "title": "Split one expense across projects or cost centres",
+      "kind": "feature_request",
+      "difficulty": "medium"
+    },
+    {
+      "id": "delegate-approvals",
+      "title": "Delegate approval authority while away",
+      "kind": "feature_request",
+      "difficulty": "medium"
+    },
+    {
+      "id": "expense-search-filters",
+      "title": "Search and filter the expense list",
+      "kind": "feature_request",
+      "difficulty": "medium"
+    },
+    {
+      "id": "sso-saml",
+      "title": "SAML / SSO login",
+      "kind": "feature_request",
+      "difficulty": "easy",
+      "note": "Auth-adjacent to bug-login-loop-after-reset without being related."
+    },
+    {
+      "id": "receipt-ocr-accuracy",
+      "title": "Improve receipt OCR extraction accuracy",
+      "kind": "feature_request",
+      "difficulty": "hard",
+      "note": "Adversarial neighbour of bug-scan-crash-ios — same feature area, same route, different problem. Route-based structural clustering alone will merge these two, which is exactly the limit we want the corpus to expose."
+    },
+    {
+      "id": "bug-scan-crash-ios",
+      "title": "Receipt scanner crashes on iOS after 4.12.0",
+      "kind": "bug",
+      "difficulty": "easy",
+      "structural": true,
+      "note": "Tightly concentrated on one route, one platform, one version, in a burst after the 4.12.0 release. This is the case structural clustering should nail with zero NLP."
+    },
+    {
+      "id": "bug-billing-promo-500",
+      "title": "Billing page errors when a promo code is applied",
+      "kind": "bug",
+      "difficulty": "easy",
+      "structural": true
+    },
+    {
+      "id": "bug-date-off-by-one",
+      "title": "Expense date shifts by a day in non-UTC timezones",
+      "kind": "bug",
+      "difficulty": "medium"
+    },
+    {
+      "id": "bug-large-attachment-silent-fail",
+      "title": "Attachments over 10MB fail without an error",
+      "kind": "bug",
+      "difficulty": "medium"
+    },
+    {
+      "id": "bug-login-loop-after-reset",
+      "title": "Login loop after a password reset",
+      "kind": "bug",
+      "difficulty": "medium",
+      "structural": true
+    },
+    {
+      "id": "bug-report-total-rounding",
+      "title": "Report totals disagree with the sum of line items",
+      "kind": "bug",
+      "difficulty": "medium"
+    },
+    {
+      "id": "bug-duplicate-push",
+      "title": "Duplicate push notifications for one approval",
+      "kind": "bug",
+      "difficulty": "easy"
+    },
+    {
+      "id": "bug-keyboard-covers-amount",
+      "title": "Keyboard covers the amount field on small iPhones",
+      "kind": "bug",
+      "difficulty": "medium"
+    },
+    {
+      "id": "bug-approvals-no-refresh",
+      "title": "Approvals list does not refresh after an action",
+      "kind": "bug",
+      "difficulty": "medium"
+    },
+    {
+      "id": "confusion-submitted-vs-approved",
+      "title": "Status vocabulary is unclear (submitted vs approved vs reimbursed)",
+      "kind": "question",
+      "difficulty": "medium"
+    },
+    {
+      "id": "confusion-invite-teammate",
+      "title": "Users cannot work out how to invite a teammate",
+      "kind": "question",
+      "difficulty": "easy"
+    },
+    {
+      "id": "praise-scanner",
+      "title": "Positive feedback on the receipt scanner",
+      "kind": "praise",
+      "difficulty": "easy",
+      "note": "Praise must cluster like anything else but must not surface as work. A ranker that puts this in the top ten is broken."
+    },
+    {
+      "id": "praise-speed",
+      "title": "Positive feedback on app speed",
+      "kind": "praise",
+      "difficulty": "easy"
+    }
+  ]
+}
