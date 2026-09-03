@@ -1,0 +1,15 @@
+{
+  "name": "@quorum/node",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Server-side ingest and read API for Quorum: support-inbox and CSV import, exception capture, and a ranked issue list. Zero runtime dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {},
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

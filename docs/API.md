@@ -160,9 +160,14 @@ No UI, and the fastest path to value: point it at a support inbox and get a
 ranked list from feedback you already have, without installing a widget. This
 is also how a NestJS/Express/Fastify backend participates.
 
+> **Implemented**, minus webhooks — see
+> [`packages/node`](../packages/node/README.md). `secretKey` and `endpoint`
+> arrive with the ingest service; today it is a `projectId` and a pluggable
+> store.
+
 ```ts
 import { Quorum } from '@quorum/node'
-const quorum = new Quorum({ secretKey: process.env.QUORUM_SECRET_KEY })
+const quorum = new Quorum({ projectId: 'acme-web' })
 
 // pipe a support ticket into the same canonical-issue store
 await quorum.capture({
@@ -173,14 +178,31 @@ await quorum.capture({
   context: { route: ticket.page, appVersion: ticket.version },
 })
 
-// backend exception → bug submission with server context
-await quorum.captureException(err, { route: req.path, user: { externalId: req.user.id } })
+// backend exception → bug submission, grouped by stack rather than message
+await quorum.captureException(err, {
+  context: { route: req.path },
+  user: { externalId: req.user.id },
+})
 
-// bulk historical import
+// bulk historical import — clientTs is required per row, deliberately
 await quorum.import(rows, { source: 'import' })
+await quorum.importCsv(csv, { source: 'support_inbox' })
+
+// the server side of PROTOCOL.md, for SDK clients
+await quorum.ingest(envelope)   // → { accepted, duplicate }
+
+// and the ranked list
+const issues = await quorum.issues({ now: new Date(), limit: 10 })
 ```
 
-Outbound webhooks for the write-side integration:
+An unattributed record needs an explicit policy rather than a guessed identity
+([ADR-0020](adr/0020-identity-is-never-guessed.md)):
+
+```ts
+await quorum.importCsv(csv, { unattributed: 'per-record' })
+```
+
+Outbound webhooks for the write-side integration (**not implemented**, v0.5):
 
 ```ts
 quorum.webhooks.on('issue.ranked',  ({ issue }) => createLinearIssue(issue))
@@ -195,6 +217,11 @@ automatically when it ships.
 ---
 
 ## Read API (dashboard, or your own UI)
+
+> The HTTP surface below needs `services/api`. The **in-process equivalent is
+> implemented**: `quorum.issues({ now, limit })` returns ranked issues carrying
+> their score components, a one-line explanation, and the verbatim quotes
+> behind each row. The HTTP layer is a serialization of it, not new logic.
 
 ```
 GET  /v0/issues?sort=score&status=open&limit=20

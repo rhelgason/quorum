@@ -12,18 +12,21 @@
 
 > ### Status: early, partially built
 >
-> **Working today** (412 tests, zero runtime dependencies):
+> **Working today** (588 tests, zero runtime dependencies):
 > `@quorum/core` — capture protocol, ULID idempotency keys, a durable bounded
 > offline queue, ingest transport with backoff and the full error table, PII
 > redaction, structured logging.
 > `@quorum/aggregate` — TF-IDF clustering, offline consolidation, explainable
 > ranking, provider-agnostic LLM and embedding layers.
+> `@quorum/node` — support-inbox/CSV import, exception capture, protocol
+> ingest, and the read API that turns them into a ranked list with evidence.
 > `@quorum/eval` — labeled corpus, clustering and rank-agreement metrics.
 > `npm run eval` prints a ranked backlog from the corpus with no LLM involved.
 >
-> **Not built yet:** the widget, the framework wrappers, ingest server, and the
-> dashboard. The integration snippets below describe the target API, not
-> working software.
+> **Not built yet:** the widget, the framework wrappers, a persistent ingest
+> server, and the dashboard. `@quorum/node` stores in memory and recomputes on
+> read. The web integration snippets below describe the target API, not working
+> software.
 >
 > Follow [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's shipping and
 > [`docs/adr/`](docs/adr/) for why. Three roadmap assumptions have already been
@@ -56,8 +59,19 @@ spec, the verbatim quotes behind it, the affected user count, and repro data
 attached. Then tell the people who asked when it ships.
 
 You don't need to install anything to see value: point
-[`@quorum/node`](docs/API.md#l3--quorumnode-server-side-ingest) at a support
-inbox and get a ranked list from feedback you already have.
+[`@quorum/node`](packages/node/README.md) at a support inbox and get a ranked
+list from feedback you already have.
+
+```ts
+const quorum = new Quorum({ projectId: 'acme-web' })
+await quorum.importCsv(csv, { source: 'support_inbox' })
+
+for (const issue of await quorum.issues({ now: new Date(), limit: 10 })) {
+  console.log(issue.title)        // a verbatim user sentence — no LLM involved
+  console.log(issue.explanation)  // "14 users, 22 submissions, demand 9.31, growth ×1.8"
+  console.log(issue.quotes)       // the evidence behind the row
+}
+```
 
 ## Why not just use a feedback board
 
@@ -113,19 +127,19 @@ docs/            architecture, data model, protocol, privacy, ADRs
 packages/
   core/          @quorum/core      — protocol, ULID, offline queue, transport, redaction, logging
   aggregate/     @quorum/aggregate — clustering, ranking, LLM provider. Zero deps.
+  node/          @quorum/node      — import, exception capture, protocol ingest, ranked read API
   eval/          @quorum/eval      — metrics, labeled corpus, baselines, scoring CLI
   web/           @quorum/web    — <quorum-nub> web component (planned)
   react/         @quorum/react  — hooks + wrapper (planned)
-  node/          @quorum/node   — server-side ingest (planned)
 services/
-  api/           ingest + read API (planned)
+  api/           persistent ingest + HTTP read API (planned)
 examples/        integration demos (planned)
 ```
 
 Tests run on Node's built-in runner with zero dependencies:
 
 ```bash
-npm test            # 291 tests, no install required
+npm test            # 588 tests, no install required
 npm run eval        # clustering baselines + a ranked backlog from the corpus
 ```
 
@@ -152,6 +166,7 @@ The decisions that shape everything else:
 - [Rank agreement is the eval target](docs/adr/0014-rank-agreement-is-the-eval-target.md) — tuning on ARI picks a measurably worse ranked list
 - [Account weight is logarithmic](docs/adr/0015-log-scaled-account-weight.md) — linear MRR turns the roadmap into "what the whale wants"
 - [The LLM is config, not code](docs/adr/0016-llm-is-config-not-code.md) — free by default, no model names in the repo
+- [Identity is never guessed](docs/adr/0020-identity-is-never-guessed.md) — a random id per anonymous record silently turns unique-user ranking into vote counting
 
 ## Constraints we hold ourselves to
 

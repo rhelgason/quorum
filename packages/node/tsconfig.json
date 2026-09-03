@@ -1,0 +1,30 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2022"
+    ],
+    "types": [
+      "node"
+    ],
+    // `noEmit`, and outside the root build graph, for the same reason as
+    // `packages/eval`: this package imports `@quorum/core` and
+    // `@quorum/aggregate` sources by deep relative path, which is what lets
+    // `node --test` run it with an empty `node_modules` but is illegal across
+    // TypeScript project references (see docs/TESTING.md).
+    //
+    // It becomes a real published package when the ingest service it fronts
+    // exists — at which point the cross-package imports resolve through
+    // workspace links against built `dist` output and this flips to a
+    // composite build. Publishing an SDK for a service that does not exist
+    // would be shipping a client to nowhere, so there is nothing lost by
+    // waiting.
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}
