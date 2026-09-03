@@ -152,6 +152,38 @@ the ceiling as real and the exact values as noise. The tests assert ranges for
 that reason. See
 [ADR-0018](../../docs/adr/0018-two-tier-clustering-validated.md).
 
+### Oracle ablation — is a semantic signal worth building?
+
+An oracle embedder derives vectors from ground-truth labels with a tunable
+noise level. It cheats, so it says nothing about clustering quality; it
+measures the **headroom of everything downstream of similarity**.
+
+```
+  noise   w=0.5 hybrid   w=1.0 pure semantic
+  -------------------------------------------
+   0.0        10/10            10/10
+   0.4         9/10             9/10
+   0.5         9/10             9/10
+   0.6         8/10             6/10
+   0.8         6/10             3/10
+```
+
+Three conclusions:
+
+1. **A perfect signal gives 10/10.** Same pipeline, same ranking, same corpus
+   as the 6/10 lexical result — only similarity changed. The ceiling is a
+   similarity problem, not a design problem.
+2. **The bar is low.** Half the vector can be noise and the list is still
+   nearly right, so a small local model suffices. Embeddings stay free.
+3. **Keep the lexical blend.** Under heavy degradation the hybrid scores 6/10
+   where pure semantic scores 3/10 — lexical precision on product nouns does
+   not rot when the model does.
+
+Caveat: oracle noise is random, while real embedding error is systematic (a
+real model confuses "dark mode" and "light mode" *consistently*). Treat the
+tolerance as an upper bound. See
+[ADR-0019](../../docs/adr/0019-embedding-quality-bar.md).
+
 ### The finding that changed the roadmap
 
 Sliced by kind, structural clustering is not one method — it's two:

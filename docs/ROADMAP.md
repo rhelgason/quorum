@@ -38,7 +38,12 @@ widget required to see value.
 - [ ] **Local sentence embeddings + hybrid similarity** — promoted from v0.4.
       Lexical cannot bridge "add dark mode" ↔ "the app destroys my eyes at
       night", and `dark-mode` is the largest issue in the corpus.
-- [ ] Pluggable embedder interface, absent-by-default like the LLM provider
+- [x] Pluggable embedder interface + OpenAI-compatible adapter, absent by
+      default. Free and local via Ollama; no model name in the source tree.
+- [x] Hybrid similarity (`semanticWeight`), defaulting to lexical-only
+- [ ] **Validate against a real embedding model** — the oracle ablation says a
+      perfect signal gives 10/10 and the bar is low, but no actual model has
+      been measured ([ADR-0019](adr/0019-embedding-quality-bar.md))
 - [x] Offline consolidation to repair online over-splitting — raises the
       lexical ceiling from 5/10 to 6/10 and makes a high online threshold the
       right default ([ADR-0018](adr/0018-two-tier-clustering-validated.md))

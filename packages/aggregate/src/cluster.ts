@@ -18,6 +18,7 @@
 
 import { Centroid, cosine, vectorize, type IdfTable, type SparseVector } from './vector.ts';
 import { tokenize, type TokenizeOptions } from './text.ts';
+import { DenseCentroid, denseCosine } from './embed.ts';
 
 export interface Doc {
   id: string;
@@ -26,6 +27,14 @@ export interface Doc {
   route?: string;
   appVersion?: string;
   platform?: string;
+  /**
+   * Precomputed sentence embedding, L2-normalized.
+   *
+   * Supplied by the caller rather than fetched here, because embedding is
+   * async and batched while clustering is synchronous and per-item. Ingest
+   * embeds a batch, then clusters.
+   */
+  vector?: Float64Array;
 }
 
 export interface ClusterOptions {
@@ -47,6 +56,18 @@ export interface ClusterOptions {
   structuralBonus?: number;
   /** Precomputed IDF. Omit to derive it from the input batch. */
   idf?: IdfTable;
+  /**
+   * Weight on the semantic signal, 0..1. Default 0 (lexical only).
+   *
+   * `similarity = (1 - w) * lexical + w * semantic`
+   *
+   * Blended rather than either/or because the two fail differently: embeddings
+   * bridge paraphrase but over-merge adjacent topics ("dark mode" with "light
+   * mode"), while lexical is precise on shared product nouns and blind to
+   * rewording. Documents without a `vector` fall back to lexical-only scoring,
+   * so a partially-embedded batch still clusters.
+   */
+  semanticWeight?: number;
 }
 
 export interface ClusterAssignment {
@@ -67,6 +88,7 @@ export interface ClusterResult {
 interface LiveCluster {
   id: string;
   centroid: Centroid;
+  dense: DenseCentroid;
   /** Counts of `route|version` among members, for the structural bonus. */
   structure: Map<string, number>;
 }
@@ -87,6 +109,7 @@ function structuralAgreement(cluster: LiveCluster, doc: Doc): number {
 export function clusterDocs(docs: readonly Doc[], options: ClusterOptions): ClusterResult {
   const tokenOptions = options.tokenize ?? {};
   const structuralBonus = options.structuralBonus ?? 0;
+  const semanticWeight = Math.min(1, Math.max(0, options.semanticWeight ?? 0));
 
   const tokenized = docs.map((d) => tokenize(d.text, tokenOptions));
   const idf = options.idf ?? buildIdfFrom(tokenized);
@@ -105,7 +128,20 @@ export function clusterDocs(docs: readonly Doc[], options: ClusterOptions): Clus
     let bestScore = -1;
 
     for (const candidate of live) {
-      let score = cosine(vector, candidate.centroid.vector());
+      const lexical = cosine(vector, candidate.centroid.vector());
+
+      // Blend only when both sides actually carry a semantic vector. Treating
+      // a missing embedding as similarity 0 would penalise it rather than
+      // simply not counting it.
+      const candidateDense = candidate.dense.vector();
+      const canBlend =
+        semanticWeight > 0 && doc.vector !== undefined && candidateDense !== undefined;
+
+      let score = canBlend
+        ? (1 - semanticWeight) * lexical +
+          semanticWeight * denseCosine(doc.vector as Float64Array, candidateDense as Float64Array)
+        : lexical;
+
       if (structuralBonus > 0) {
         score += structuralBonus * structuralAgreement(candidate, doc);
       }
@@ -115,14 +151,16 @@ export function clusterDocs(docs: readonly Doc[], options: ClusterOptions): Clus
       }
     }
 
-    // An empty vector means every token was out-of-vocabulary or stopped out.
-    // Such a doc matches everything at 0 and nothing meaningfully, so it always
-    // seeds its own cluster rather than being dumped into whichever cluster
-    // happens to be first.
-    const hasSignal = vector.size > 0;
+    // An empty lexical vector means every token was out-of-vocabulary or
+    // stopped out. Such a doc matches everything at 0 and nothing meaningfully,
+    // so it seeds its own cluster rather than being dumped into whichever
+    // cluster happens to be first — unless it carries an embedding, which is
+    // precisely the case semantic similarity exists to rescue.
+    const hasSignal = vector.size > 0 || (semanticWeight > 0 && doc.vector !== undefined);
 
     if (best !== undefined && hasSignal && bestScore >= options.threshold) {
       best.centroid.add(vector);
+      if (doc.vector !== undefined) best.dense.add(doc.vector);
       const key = structuralKey(doc);
       best.structure.set(key, (best.structure.get(key) ?? 0) + 1);
       clusters.get(best.id)?.push(doc.id);
@@ -132,7 +170,9 @@ export function clusterDocs(docs: readonly Doc[], options: ClusterOptions): Clus
       const id = `c${live.length}`;
       const centroid = new Centroid();
       centroid.add(vector);
-      live.push({ id, centroid, structure: new Map([[structuralKey(doc), 1]]) });
+      const dense = new DenseCentroid();
+      if (doc.vector !== undefined) dense.add(doc.vector);
+      live.push({ id, centroid, dense, structure: new Map([[structuralKey(doc), 1]]) });
       clusters.set(id, [doc.id]);
       assignments.push({ docId: doc.id, clusterId: id, similarity: 0 });
       labels.push(id);

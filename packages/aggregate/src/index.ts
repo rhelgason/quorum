@@ -25,6 +25,16 @@ export type {
 export type { ClusterAssignment, ClusterOptions, ClusterResult, Doc } from './cluster.ts';
 
 export {
+  createOpenAICompatibleEmbedder,
+  DenseCentroid,
+  denseCosine,
+  embedderFromEnv,
+  normalizeDense,
+  QuorumEmbedError,
+} from './embed.ts';
+export type { EmbedEnv, Embedder, OpenAICompatibleEmbedderConfig } from './embed.ts';
+
+export {
   createOpenAICompatibleProvider,
   nullProvider,
   providerFromEnv,
