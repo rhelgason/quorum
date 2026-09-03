@@ -58,20 +58,68 @@ signals a plain feedback form can't produce.
 spec, the verbatim quotes behind it, the affected user count, and repro data
 attached. Then tell the people who asked when it ships.
 
-You don't need to install anything to see value: point
-[`@quorum/node`](packages/node/README.md) at a support inbox and get a ranked
-list from feedback you already have.
+## See it work
+
+You don't need to install anything — or even collect any feedback — to see
+value. Point [`@quorum/node`](packages/node/README.md) at a support-inbox
+export and get a ranked list out of feedback you already have:
 
 ```ts
 const quorum = new Quorum({ projectId: 'acme-web' })
 await quorum.importCsv(csv, { source: 'support_inbox' })
 
-for (const issue of await quorum.issues({ now: new Date(), limit: 10 })) {
-  console.log(issue.title)        // a verbatim user sentence — no LLM involved
-  console.log(issue.explanation)  // "14 users, 22 submissions, demand 9.31, growth ×1.8"
-  console.log(issue.quotes)       // the evidence behind the row
-}
+const issues = await quorum.issues({ now: new Date(), limit: 10 })
 ```
+
+That's the whole integration. Run it against the bundled example export:
+
+```bash
+npm run demo        # no install required
+```
+
+```
+3. Ranked backlog — top 8, as of 2026-09-01
+───────────────────────────────────────────
+
+  1. [ 22.48] dashboard is so slow to load now, it used to be instant
+      10 users, 10 submissions, demand 14.99, avg weight 1.61, growth ×1.50 (6→ from 4)
+      bug ×10 · /dashboard (100% of members)
+      evidence:
+      ▸ "dashboard is so slow to load now, it used to be instant"
+          T-1033 · 2026-08-22 · support_inbox
+        "Dashboard loading slow, timing out on our office wifi"
+          T-1040 · 2026-08-30 · support_inbox
+
+  2. [  7.54] dark mode, dark mode, dark mode. Please.
+      9 users, 11 submissions, demand 7.54, avg weight 1.32, growth n/a (only 0 prior)
+      feature_request ×11 · /dashboard (70% of members)
+      evidence:
+      ▸ "dark mode, dark mode, dark mode. Please."
+          T-1045 · 2026-08-31 · support_inbox
+        "dark mode would be amazing, please add dark mode"
+          01J8Z9QK4T0000000000000001 · 2026-08-31 · nub
+
+  3. [  5.55] Checking in on SAML SSO timing, procurement is waiting on us
+      3 users, 6 submissions, demand 5.55, avg weight 2.82, growth n/a (only 0 prior)
+      feature_request ×6 · /settings/security (100% of members)
+```
+
+Read what those three rows are actually saying:
+
+- **#1 ranks on growth, not volume** — 6 unique users this week against 4 the
+  week before. The second derivative is what a PM wants.
+- **#2 mixes sources.** A widget submission arriving over the capture protocol
+  clustered straight into the same issue as support tickets. That's the point
+  of one canonical-issue store.
+- **#3 reaches the top three on 3 users**, because their average account weight
+  is 2.82. Revenue orders the list without dominating it.
+
+No LLM was involved. Titles are the medoid submission — a real sentence a real
+user wrote — and every number decomposes into inputs you can check.
+
+The demo also prints what the pipeline gets *wrong* on this corpus, because a
+ranked list you can't interrogate is one nobody believes. See
+[`examples/support-inbox`](examples/support-inbox/README.md).
 
 ## Why not just use a feedback board
 
@@ -133,14 +181,16 @@ packages/
   react/         @quorum/react  — hooks + wrapper (planned)
 services/
   api/           persistent ingest + HTTP read API (planned)
-examples/        integration demos (planned)
+examples/
+  support-inbox/ runnable demo — CSV in, ranked backlog out
 ```
 
 Tests run on Node's built-in runner with zero dependencies:
 
 ```bash
 npm test            # 588 tests, no install required
-npm run eval        # clustering baselines + a ranked backlog from the corpus
+npm run demo        # import an example support inbox, print a ranked backlog
+npm run eval        # clustering baselines + rank agreement against the corpus
 ```
 
 ## Design docs
