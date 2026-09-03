@@ -1,7 +1,11 @@
 # Quorum — Architecture
 
-> Status: design. Nothing here is load-bearing yet; it exists so the first
-> packages get built against a coherent shape instead of accreting one.
+> Status: partly built. The aggregation core (clustering, ranking, LLM
+> provider) exists and is tested; the client, ingest, and dashboard do not.
+> Sections describing the deterministic pipeline reflect shipped code —
+> and two of its original claims were corrected by measurement, so read
+> [ADR-0013](adr/0013-structural-clustering-is-a-regression-detector.md) and
+> [ADR-0014](adr/0014-rank-agreement-is-the-eval-target.md) alongside.
 
 ## What Quorum is
 
@@ -277,6 +281,19 @@ subtly wrong.
 
 See [ADR-0005](adr/0005-deterministic-core-llm-at-render-edge.md).
 
+### What measurement changed
+
+Two claims in this section were written before the eval harness existed and
+did not survive it:
+
+- Structural grouping alone is **not** a viable v1. Precision 1.000 on
+  release-burst defects, ARI 0.023 on feature requests
+  ([ADR-0013](adr/0013-structural-clustering-is-a-regression-detector.md)).
+- Lexical clustering alone is **not** sufficient either — 5 of the correct top
+  10. Embeddings moved into v0.1, and the eval target moved from ARI to rank
+  agreement, because tuning on ARI selects a measurably worse ranked list
+  ([ADR-0014](adr/0014-rank-agreement-is-the-eval-target.md)).
+
 ### The unglamorous prerequisite
 
 Hand-label a few hundred real submissions into ground-truth clusters *before*
@@ -293,7 +310,9 @@ highest-leverage day on the ML side.
 | Client core | TypeScript, zero deps | Bundle budget |
 | Widget | Web Components + Lit-sized runtime | One UI, N adapters |
 | Backend | TypeScript (ingest/API) | Shares protocol types with the SDK |
-| Aggregation | Python | The ML ecosystem lives there |
+| Aggregation core | TypeScript, zero deps | Shares the protocol types with ingest; runs on the online hot path. See [ADR-0017](adr/0017-deterministic-core-in-typescript.md) |
+| Model inference | Python / ONNX / any embeddings endpoint | Behind a pluggable interface, not on the hot path |
+| Offline consolidation | Python | HDBSCAN and Leiden have no good JS equivalents, and nightly batch can afford the boundary |
 | Store | Postgres + pgvector | Already need Postgres; don't add a second datastore |
 | Embeddings | local sentence-transformer | Deterministic, offline, free |
 | Offline clustering | HDBSCAN, Leiden as alternate | No k, handles density, labels noise |

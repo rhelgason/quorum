@@ -4,8 +4,8 @@ Clustering evaluation harness: metrics, a labeled corpus, adversarial pairs,
 and baseline clusterers.
 
 ```bash
-node packages/eval/src/report.ts   # baseline table + diagnostics
-npm test                            # metrics, corpus integrity, baselines
+npm run eval    # baselines, rank agreement, and a ranked backlog
+npm test        # metrics, corpus integrity, baselines, clustering
 ```
 
 ## Read this before trusting a number
@@ -57,8 +57,14 @@ src/
   corpus.ts          loader + integrity validation
   hard-pairs.ts      per-trap scoring
   baselines.ts       degenerate floors + structural clusterers
-  report.ts          runner and text report
+  task-metrics.ts    topKAgreement — the headline metric
+  adapt.ts           corpus -> @quorum/aggregate input shapes
+  report.ts          runners and text formatting (pure)
+  cli.ts             console entrypoint
 ```
+
+Lexical clustering itself lives in
+[`@quorum/aggregate`](../aggregate/), not here — this package only measures.
 
 ## The corpus is built around traps
 
@@ -95,6 +101,30 @@ corpus deliberately contains adversarial neighbours:
 Note the hard-pair column: `all-singletons` scores 13/20 while being a
 completely useless clusterer, because most traps are "these should *not*
 merge". Never read that column alone.
+
+### Rank agreement — the headline metric
+
+ARI scores a clustering; it is not what the product delivers. A team reads a
+top ten, so the number that matters is how much of the correct top ten
+survives:
+
+```
+  method                        ARI   top10  capture
+  --------------------------------------------------
+  perfect clustering          1.000   10/10     1.00
+  all-singletons (useless)    0.000    3/10     0.14
+  structural (7d)             0.092    4/10     0.56
+  lexical t=0.10              0.297    5/10     0.63
+  lexical t=0.15              0.316    3/10     0.58   <-- best ARI, worst list
+  lexical t=0.20              0.284    5/10     0.44
+```
+
+**Tuning on ARI picks t=0.15, which is barely better than shattering the corpus
+into singletons.** The mechanism is fragmentation: splitting `dark-mode` into
+four pure clusters of two barely dents ARI, but divides its demand by four and
+drops all four off the front page. Optimize `topKAgreement`; use the clustering
+metrics to explain why it moved. See
+[ADR-0014](../../docs/adr/0014-rank-agreement-is-the-eval-target.md).
 
 ### The finding that changed the roadmap
 

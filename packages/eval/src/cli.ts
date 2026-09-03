@@ -9,9 +9,11 @@
  * this file is console plumbing and is excluded from coverage thresholds.
  */
 
-import { loadCorpus, validate } from './corpus.ts';
+import { loadCorpus, truthLabels, validate } from './corpus.ts';
 import {
   formatDiagnosis,
+  formatRankedList,
+  formatRankTable,
   formatSubsetTable,
   formatTable,
   formatTraps,
@@ -25,6 +27,11 @@ import {
   structural,
   structuralPlusToken,
 } from './baselines.ts';
+import { toDocs } from './adapt.ts';
+import { clusterDocs } from '../../aggregate/src/cluster.ts';
+
+/** Fixed evaluation clock, so the report is reproducible across runs. */
+const EVAL_NOW = '2026-09-01T00:00:00Z';
 
 const corpus = loadCorpus();
 
@@ -77,4 +84,39 @@ console.log();
 console.log(formatDiagnosis(corpus, structural()));
 console.log(`\n  hard-pair traps for '${best.name}':`);
 console.log(formatTraps(best));
+
+// ---------------------------------------------------------------------------
+// Rank agreement — the headline metric. ADR-0014.
+// ---------------------------------------------------------------------------
+
+const docs = toDocs(corpus.submissions);
+const lexical = (threshold: number, bigrams = false) => () =>
+  clusterDocs(docs, { threshold, tokenize: { bigrams } }).labels;
+
+console.log('\n  top-10 rank agreement (what the product actually delivers):');
+console.log(
+  formatRankTable(corpus, EVAL_NOW, [
+    ['perfect clustering', () => truthLabels(corpus)],
+    ['all-singletons', () => allSingletons(corpus.submissions)],
+    ['structural (7d)', () => structural()(corpus.submissions)],
+    ['lexical t=0.10', lexical(0.1)],
+    ['lexical t=0.15', lexical(0.15)],
+    ['lexical t=0.20', lexical(0.2)],
+    ['lexical+bigrams t=0.10', lexical(0.1, true)],
+  ]),
+);
+console.log(
+  '\n  Note: best ARI (t=0.15) is NOT best top-10. Tuning on ARI picks the\n' +
+    '  worse configuration — see docs/adr/0014-rank-agreement-is-the-eval-target.md',
+);
+
+// ---------------------------------------------------------------------------
+// The actual product output: a ranked list with evidence.
+// ---------------------------------------------------------------------------
+
+console.log('\n  ── Ranked backlog from perfect clustering (the target) ──\n');
+console.log(formatRankedList(corpus, truthLabels(corpus), EVAL_NOW, 10));
+
+console.log('\n  ── Same list from lexical clustering (what we can build today) ──\n');
+console.log(formatRankedList(corpus, lexical(0.1)(), EVAL_NOW, 10));
 console.log();

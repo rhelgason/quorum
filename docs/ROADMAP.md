@@ -11,13 +11,18 @@ evidence behind each row.
 That rules out the tempting build order where aggregation waits for volume. A
 team with 200 pieces of feedback still doesn't know what's important.
 
-> **Revised after measurement.** v0.1 originally assumed structural grouping
-> (route + version + burst) alone would produce that ranked list. The eval
-> harness says otherwise: precision 1.000 on release-burst bug clusters, but
-> ARI 0.023 on feature requests, which are the majority of what ranking is for.
-> Structural grouping ships as regression *detection*; the ranked list needs
-> text similarity. See
-> [ADR-0013](adr/0013-structural-clustering-is-a-regression-detector.md).
+> **Revised twice, both times by measurement.**
+>
+> Structural grouping (route + version + burst) turned out to be a precise
+> regression detector and useless for feature requests — ARI 0.023 on the
+> majority of what ranking is for
+> ([ADR-0013](adr/0013-structural-clustering-is-a-regression-detector.md)).
+>
+> Lexical clustering, built to replace it, is 2.3× better but still recovers
+> only 5 of the correct top 10. **Embeddings move into v0.1 and the "v1 with no
+> ML" plan is dead.** The eval target also changed: tuning on ARI picks a
+> *worse* ranked list than tuning on rank agreement
+> ([ADR-0014](adr/0014-rank-agreement-is-the-eval-target.md)).
 
 ## v0.1 — A ranked list from data you already have
 
@@ -28,21 +33,28 @@ widget required to see value.
 - [ ] `@quorum/node` — support-inbox, exception, and CSV ingest. **First**, not last.
 - [ ] Ingest service + `submissions` table + presigned capture upload
 - [ ] LSH near-duplicate collapse (SimHash over character shingles)
-- [ ] **Lexical clustering (BM25 / TF-IDF)** — has to carry the ranked list now
-      that structural grouping is known not to
+- [x] **Lexical clustering (TF-IDF cosine + leader-follower)** — shipped in
+      `@quorum/aggregate`. Necessary, not sufficient: 5/10 rank agreement.
+- [ ] **Local sentence embeddings + hybrid similarity** — promoted from v0.4.
+      Lexical cannot bridge "add dark mode" ↔ "the app destroys my eyes at
+      night", and `dark-mode` is the largest issue in the corpus.
+- [ ] Pluggable embedder interface, absent-by-default like the LLM provider
 - [ ] Structural grouping shipped as **regression alerting**, not as ranking:
       "12 reports from /receipts/scan, iOS 4.12.0, in 72 hours"
-- [ ] Deterministic ranking: unique users × account weight × recency × growth
-- [ ] Medoid labels + TF-IDF tags — no LLM, no embeddings
+- [x] Deterministic ranking: unique users × account weight × recency × growth,
+      with log-scaled weighting and a growth volume floor
+      ([ADR-0015](adr/0015-log-scaled-account-weight.md))
+- [x] Medoid labels — no LLM required, ever
+      ([ADR-0016](adr/0016-llm-is-config-not-code.md))
 - [ ] Ranked dashboard with **score explainability** — every row shows why it
       ranks where it does, and drills into the verbatim submissions
 
 Import-first is deliberate. It proves the claim on the customer's own data
 instead of asking them to collect for six months first.
 
-Open risk: if lexical clustering also underperforms on the eval corpus, local
-embeddings move from v0.4 into v0.1 and the "no ML in v1" simplification is
-gone. Measure before committing to the simpler story.
+That open risk has now been measured and it landed on the bad side: lexical
+clustering underperformed, so embeddings are in v0.1 and the "no ML in v1"
+simplification is gone.
 
 ## v0.2 — Capture that feeds better ranking
 
@@ -68,16 +80,19 @@ form can't.
       inferred sentiment
 - [ ] Regression detection: clusters on one screen *and* one version
 
-## v0.4 — Semantic clustering
+## v0.4 — Clustering quality
+
+Embeddings moved to v0.1. What remains here is the offline tier and the
+consolidation loop.
 
 The harness exists ([`packages/eval`](../packages/eval/README.md)) but its
 corpus is synthetic, which validates implementations rather than approaches.
 **Replacing it with real labeled data is the highest-leverage task in this
 track** — do not treat any threshold as tuned until that lands.
 
-- [ ] Local sentence embeddings + pgvector
-- [ ] Hybrid similarity (BM25 + cosine + structural), weights tuned on eval
-- [ ] Online leader-follower assignment with incremental centroids
+- [ ] pgvector persistence for embeddings
+- [ ] Hybrid weights (lexical : semantic : structural) tuned on rank agreement
+- [x] Online leader-follower assignment with incremental centroids
 - [ ] Nightly HDBSCAN/Leiden re-consolidation → human-gated proposals
 - [ ] Merge/split UI, `locked` clusters
 

@@ -10,14 +10,20 @@
 
 ---
 
-> ### ⚠️ Status: design phase
+> ### Status: early, partially built
 >
-> **Nothing is implemented yet.** This repository currently contains the
-> architecture, the data model, the wire protocol, and the decision records
-> that the first packages will be built against. Code examples below describe
-> the target API, not working software.
+> **Working today** (291 tests, zero runtime dependencies):
+> PII redaction and structured logging (`@quorum/core`); TF-IDF clustering,
+> explainable ranking, and a provider-agnostic LLM layer (`@quorum/aggregate`);
+> a labeled corpus and evaluation harness (`@quorum/eval`).
+> `npm run eval` prints a ranked backlog from the corpus with no LLM involved.
 >
-> Follow [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's actually shipping.
+> **Not built yet:** the widget, the SDKs, ingest, and the dashboard. The
+> integration snippets below describe the target API, not working software.
+>
+> Follow [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's shipping and
+> [`docs/adr/`](docs/adr/) for why. Three roadmap assumptions have already been
+> overturned by measurement rather than argument — ADRs 0013, 0014.
 
 ---
 
@@ -101,21 +107,22 @@ quorum-nub { --quorum-accent: #7c3aed; --quorum-radius: 12px; }
 ```
 docs/            architecture, data model, protocol, privacy, ADRs
 packages/
-  core/          @quorum/core   — headless TS: protocol, logging, queue, capture, state machine
-  eval/          @quorum/eval   — clustering metrics, labeled corpus, scoring CLI
+  core/          @quorum/core      — protocol, PII redaction, structured logging
+  aggregate/     @quorum/aggregate — clustering, ranking, LLM provider. Zero deps.
+  eval/          @quorum/eval      — metrics, labeled corpus, baselines, scoring CLI
   web/           @quorum/web    — <quorum-nub> web component (planned)
   react/         @quorum/react  — hooks + wrapper (planned)
   node/          @quorum/node   — server-side ingest (planned)
 services/
   api/           ingest + read API (planned)
-  aggregator/    Python: embeddings, clustering, ranking (planned)
 examples/        integration demos (planned)
 ```
 
 Tests run on Node's built-in runner with zero dependencies:
 
 ```bash
-npm test            # node --test across all workspaces
+npm test            # 291 tests, no install required
+npm run eval        # clustering baselines + a ranked backlog from the corpus
 ```
 
 ## Design docs
@@ -138,11 +145,18 @@ The decisions that shape everything else:
 - [Deterministic core, LLM at the render edge](docs/adr/0005-deterministic-core-llm-at-render-edge.md) — reproducible, auditable, self-hostable
 - [Redact by default](docs/adr/0007-redact-by-default.md) — a pipeline that's safe only when configured correctly is unsafe
 - [No public roadmap](docs/adr/0011-no-public-roadmap.md) — a voting board turns weighted ranking back into a popularity contest
+- [Rank agreement is the eval target](docs/adr/0014-rank-agreement-is-the-eval-target.md) — tuning on ARI picks a measurably worse ranked list
+- [Account weight is logarithmic](docs/adr/0015-log-scaled-account-weight.md) — linear MRR turns the roadmap into "what the whale wants"
+- [The LLM is config, not code](docs/adr/0016-llm-is-config-not-code.md) — free by default, no model names in the repo
 
 ## Constraints we hold ourselves to
 
 - **≤15KB gzipped** for core + nub, panel and snapshot machinery lazy-loaded.
   CI fails on regression.
+- **Free by default.** No API key, no account, no spend. The LLM is off unless
+  configured, and no test ever makes a network call.
+- **No model identifier anywhere in the source tree.** Models are config, so a
+  deprecation is an `.env` edit, not a commit.
 - **Zero runtime dependencies** in `@quorum/core`. Tests use Node's built-in
   runner; there is no test framework to install either.
 - **No screen-share permission prompt.** Ever. We serialize the DOM.

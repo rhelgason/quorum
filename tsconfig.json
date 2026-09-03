@@ -1,4 +1,14 @@
 {
   "files": [],
-  "references": [{ "path": "packages/core" }, { "path": "packages/eval" }]
+  "references": [
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/aggregate"
+    },
+    {
+      "path": "packages/eval"
+    }
+  ]
 }

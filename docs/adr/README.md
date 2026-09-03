@@ -21,6 +21,10 @@ Format: Context → Decision → Consequences → Reversal cost.
 | [0011](0011-no-public-roadmap.md) | No public roadmap or end-user portal | Accepted · amends 0003 |
 | [0012](0012-prioritization-is-the-product.md) | Prioritization is the product; bug capture is an input | Accepted · amends 0003, 0005 |
 | [0013](0013-structural-clustering-is-a-regression-detector.md) | Structural clustering is a regression detector, not a ranker | Accepted · amends 0012 |
+| [0014](0014-rank-agreement-is-the-eval-target.md) | Rank agreement is the eval target; embeddings required for v0.1 | Accepted · amends 0012, 0013 |
+| [0015](0015-log-scaled-account-weight.md) | Account weight is logarithmic; praise is not work | Accepted · refines 0012 |
+| [0016](0016-llm-is-config-not-code.md) | The LLM is configuration, not code; free must stay possible | Accepted · refines 0005 |
+| [0017](0017-deterministic-core-in-typescript.md) | Deterministic core in TypeScript; Python only for models | Accepted · supersedes a stack-table row |
 
 New ADRs: copy 0001's shape, take the next number, don't edit an accepted one —
 supersede it with a new record and update the table.

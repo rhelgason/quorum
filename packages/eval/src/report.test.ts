@@ -6,12 +6,15 @@ import { allOneCluster, allSingletons, structural } from './baselines.ts';
 import { scoreHardPairs } from './hard-pairs.ts';
 import {
   formatDiagnosis,
+  formatRankedList,
+  formatRankTable,
   formatSubsetTable,
   formatTable,
   formatTraps,
   run,
   runSubset,
 } from './report.ts';
+import { clusterDocs } from '../../aggregate/src/cluster.ts';
 
 const corpus = loadCorpus();
 
@@ -158,5 +161,58 @@ describe('scoreHardPairs error handling', () => {
     assert.ok(r.accuracy > 0.5, 'scores well on pairs');
     const metrics = run(corpus, 'singletons', allSingletons).metrics;
     assert.equal(metrics.pairwise.f1, 0, 'while being useless');
+  });
+});
+
+describe('rank reporting', () => {
+  const NOW = '2026-09-01T00:00:00Z';
+  const docs = corpus.submissions.map((s) => ({
+    id: s.id, text: s.body, route: s.route, appVersion: s.appVersion, platform: s.platform,
+  }));
+
+  test('formatRankTable emits a header, rule, and one row per method', () => {
+    const out = formatRankTable(corpus, NOW, [
+      ['truth', () => truthLabels(corpus)],
+      ['lexical', () => clusterDocs(docs, { threshold: 0.1 }).labels],
+    ]);
+    const lines = out.split('\n');
+    assert.equal(lines.length, 4);
+    assert.match(lines[0] as string, /top10/);
+    assert.match(lines[2] as string, /truth/);
+    assert.match(lines[2] as string, /10\/10/, 'perfect clustering recovers the whole list');
+  });
+
+  test('formatRankedList titles rows with real user sentences, not generated text', () => {
+    // The no-LLM fallback working end to end: every title is a medoid, i.e. a
+    // verbatim submission somebody actually wrote.
+    const out = formatRankedList(corpus, truthLabels(corpus), NOW, 5);
+    const bodies = new Set(corpus.submissions.map((s) => s.body));
+    const titles = out
+      .split('\n')
+      .filter((l) => /^\s+\d+\./.test(l))
+      .map((l) => l.replace(/^\s+\d+\.\s+\[[^\]]+\]\s+/, ''));
+    assert.equal(titles.length, 5);
+    for (const t of titles) assert.ok(bodies.has(t), `title not a real submission: ${t}`);
+  });
+
+  test('formatRankedList explains every row', () => {
+    const out = formatRankedList(corpus, truthLabels(corpus), NOW, 3);
+    const explanations = out.split('\n').filter((l) => /demand/.test(l));
+    assert.equal(explanations.length, 3, 'one explanation per ranked row');
+  });
+
+  test('formatRankedList respects the limit and orders by score', () => {
+    const out = formatRankedList(corpus, truthLabels(corpus), NOW, 4);
+    const scores = [...out.matchAll(/\[\s*([\d.]+)\]/g)].map((m) => Number(m[1]));
+    assert.equal(scores.length, 4);
+    for (let i = 1; i < scores.length; i++) {
+      assert.ok((scores[i - 1] as number) >= (scores[i] as number));
+    }
+  });
+
+  test('formatRankedList handles a limit beyond the number of clusters', () => {
+    const single = corpus.submissions.map(() => 'only');
+    const out = formatRankedList(corpus, single, NOW, 10);
+    assert.equal(out.split('\n').filter((l) => /^\s+\d+\./.test(l)).length, 1);
   });
 });
