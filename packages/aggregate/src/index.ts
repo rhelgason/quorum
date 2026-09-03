@@ -15,6 +15,28 @@ export type { IdfTable, SparseVector } from './vector.ts';
 
 export { clusterDocs, medoid } from './cluster.ts';
 
+export { applyOutliers, applySplits, diameterPair, proposeOutliers, proposeSplits } from './split.ts';
+export type {
+  OutlierOptions,
+  OutlierProposal,
+  SplitMember,
+  SplitOptions,
+  SplitProposal,
+  SplittableCluster,
+} from './split.ts';
+
+export {
+  bandKeys,
+  candidateBlocks,
+  hammingDistance,
+  nearDuplicateGroups,
+  shingles,
+  simhash,
+  simhashSimilarity,
+  SIMHASH_BITS,
+} from './lsh.ts';
+export type { BlockOptions, LshDoc, NearDuplicateOptions } from './lsh.ts';
+
 export { applyMerges, linkageSimilarity, proposeMerges } from './consolidate.ts';
 export type {
   ClusterView,

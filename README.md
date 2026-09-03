@@ -12,12 +12,13 @@
 
 > ### Status: early, partially built
 >
-> **Working today** (644 tests, zero runtime dependencies):
+> **Working today** (712 tests, zero runtime dependencies):
 > `@quorum/core` — capture protocol, ULID idempotency keys, a durable bounded
 > offline queue, ingest transport with backoff and the full error table, the
 > panel state machine, PII redaction, structured logging.
-> `@quorum/aggregate` — TF-IDF clustering, offline consolidation, explainable
-> ranking, provider-agnostic LLM and embedding layers.
+> `@quorum/aggregate` — TF-IDF clustering, offline consolidation, split and
+> outlier proposals, SimHash/LSH blocking, explainable ranking,
+> provider-agnostic LLM and embedding layers.
 > `@quorum/node` — support-inbox/CSV import, exception capture, protocol
 > ingest, and the read API that turns them into a ranked list with evidence.
 > `@quorum/eval` — labeled corpus, clustering and rank-agreement metrics.
@@ -188,7 +189,7 @@ examples/
 Tests run on Node's built-in runner with zero dependencies:
 
 ```bash
-npm test            # 644 tests, no install required
+npm test            # 712 tests, no install required
 npm run demo        # import an example support inbox, print a ranked backlog
 npm run eval        # clustering baselines + rank agreement against the corpus
 ```

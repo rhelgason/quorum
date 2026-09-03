@@ -43,7 +43,10 @@ widget required to see value.
 - [ ] Ingest service + `submissions` table + presigned capture upload —
       `@quorum/node` stores in memory and recomputes clusters on read, so
       persistence and write-time assignment are what remain
-- [ ] LSH near-duplicate collapse (SimHash over character shingles)
+- [x] LSH near-duplicate collapse (SimHash over character shingles) — the
+      primitive, with banded blocking. **Built, not yet wired into the
+      clustering pre-pass**: making it a default needs an eval sweep, and its
+      accuracy degrades on short text, which is much of mobile feedback
 - [x] **Lexical clustering (TF-IDF cosine + leader-follower)** — shipped in
       `@quorum/aggregate`. Necessary, not sufficient: 5/10 rank agreement.
 - [ ] **Local sentence embeddings + hybrid similarity** — promoted from v0.4.
@@ -118,7 +121,10 @@ track** — do not treat any threshold as tuned until that lands.
       human-gated, with rejection memory and `locked` clusters respected
       ([ADR-0018](adr/0018-two-tier-clustering-validated.md))
 - [ ] HDBSCAN/Leiden as an alternative offline pass (Python)
-- [ ] Split proposals — only merges are implemented
+- [x] Split proposals — divisive two-way, seeded on the cluster diameter, plus
+      **outlier extraction** for the commoner failure the demo exposed: one
+      real topic with a couple of unrelated stragglers absorbed, which is not
+      two topics and which a split correctly refuses to propose
 - [ ] Merge/split review UI
 
 ## v0.5 — Close the loop

@@ -29,7 +29,7 @@ export interface EmitterOptions {
   onListenerError?: (error: unknown, event: string) => void;
 }
 
-export class Emitter<Events extends Record<string, unknown>> {
+export class Emitter<Events extends object> {
   readonly #listeners = new Map<keyof Events, Set<Listener<never>>>();
   readonly #onListenerError: (error: unknown, event: string) => void;
 
