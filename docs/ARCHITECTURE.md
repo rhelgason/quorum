@@ -5,21 +5,35 @@
 
 ## What Quorum is
 
-A drop-in feedback layer for any app. It has three jobs, in order of how hard
-they are to copy:
+**A tool that tells a team what's important.** Not a bug tracker. Bugs are one
+kind of input among feature requests, confusion, praise, and support tickets —
+they all feed one ranked answer to "what should we build next?"
 
-1. **Capture** — get high-quality, structured feedback out of a frustrated
-   user with near-zero friction, on web and on mobile.
-2. **Aggregate** — collapse thousands of differently-worded reports into a
-   stable set of canonical issues, ranked by something better than raw votes.
+Three jobs:
+
+1. **Aggregate and rank** — collapse thousands of differently-worded inputs
+   into a stable set of canonical issues, ordered by weighted demand rather
+   than by raw votes. *This is the product.*
+2. **Capture** — get high-quality, structured input out of a user with
+   near-zero friction, on web and on mobile.
 3. **Close the loop** — hand engineering an actionable spec, and tell the
-   users who asked when it ships.
+   people who asked when it ships.
 
-Job 1 is the moat. A feedback API is a Postgres table; the client-side work
-(frustration detection, DOM snapshotting, element picking, log ring buffers,
-PII redaction, offline queueing) is what nobody wants to build themselves.
-Owning the client is also how we protect job 2 — clustering quality is
-downstream of capture consistency.
+Job 1 is the promise; job 2 is what makes the promise trustworthy, and it's
+also where the defensible engineering lives. A feedback API is a Postgres
+table. The client-side work — frustration detection, DOM snapshotting, element
+picking, log ring buffers, PII redaction, offline queueing — is what nobody
+wants to build themselves, *and* it's what produces input consistent enough to
+rank. Every field the client captures automatically (route, version, account
+weight, frustration intensity) is a ranking signal a plain feedback form
+doesn't have. Capture quality and prioritization quality are the same problem
+viewed from two ends.
+
+The practical consequence, versus the obvious build order: aggregation can't be
+deferred until "we have volume." A team with 200 pieces of feedback still
+doesn't know what's important, and structural grouping (route, version, burst)
+gives them an answer with no ML at all. Ranking ships in v0.1, not v0.4.
+See [ADR-0012](adr/0012-prioritization-is-the-product.md).
 
 ## System shape
 
@@ -59,7 +73,7 @@ downstream of capture consistency.
 │                       └──────────────────────┬───────────────────────┘      │
 └──────────────────────────────────────────────┼──────────────────────────────┘
                                                ▼
-                        dashboard · public roadmap · Jira/Linear/GitHub write-back
+                    ranked dashboard · Jira/Linear/GitHub write-back · read API
 ```
 
 The dashed boundary matters: **everything above the render edge is
@@ -78,12 +92,16 @@ with their own design system.
 | L0 | `@quorum/core` | Headless TS: transport, offline queue, capture, state machine. Zero runtime deps. | Everyone, transitively |
 | L1 | `@quorum/react`, `/vue`, `/svelte` | Unstyled hooks and primitives | Teams with a design system |
 | L2 | `@quorum/web` | `<quorum-nub>` — styled, themeable, drop-in | The default path |
-| L3 | hosted portal | Public roadmap + changelog, zero code | Non-technical teams |
-| L4 | `@quorum/node` | Server-side ingest, no UI | Backends (NestJS, Rails, Django) |
+| L3 | `@quorum/node` | Server-side ingest, no UI | Backends (NestJS, Rails, Django) |
 
-L4 is not an afterthought. A NestJS shop doesn't need a widget — it needs to
-pipe support tickets and backend exceptions into the same canonical-issue
-store so inbox text clusters alongside widget submissions.
+L3 is not an afterthought — it may be the highest-leverage layer. Most teams
+already have years of accumulated signal sitting in a support inbox, and
+piping it in means Quorum produces a ranked list on day one instead of after
+six months of collection. A NestJS shop doesn't need a widget at all; it needs
+inbox text and backend exceptions clustering alongside everything else.
+
+There is no hosted end-user roadmap layer. See
+[ADR-0011](adr/0011-no-public-roadmap.md).
 
 ### Why web components
 
@@ -281,8 +299,8 @@ Everything except the final spec rendering runs on CPU with no external API call
 ## Scope discipline
 
 Web components + four framework wrappers + native iOS + native Android + React
-Native + Flutter + hosted portal is a staggering surface for a small team, each
-with its own release process and OS-version churn. **This is the single most
+Native + Flutter is a staggering surface for a small team, each with its own
+release process and OS-version churn. **This is the single most
 likely way Quorum dies.**
 
 v1 is **web components + React wrapper + native iOS**. Full stop. That proves
@@ -299,7 +317,8 @@ and it's the right call. See [ADR-0008](adr/0008-native-mobile-ui-no-webview.md)
 - npm scope `@quorum/*` availability is **unverified** — no network at time of
   writing. Fallbacks: `@quorumhq/*`, `@usequorum/*`, `quorum-sdk`.
 - Self-host packaging: single Docker Compose, or Helm chart too?
-- Does the hosted public roadmap (L3) belong in v1, or is it a distraction from
-  the capture wedge?
 - Anonymous identity: first-party `localStorage` ID is trivially cleared. Do we
   care enough to do anything smarter, given the privacy posture?
+- Ranking is only as good as `account_weight`, which requires `identify()` with
+  meaningful traits. What's the fallback story for a team that can't or won't
+  wire revenue data in? Usage frequency as a proxy?

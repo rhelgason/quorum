@@ -2,7 +2,7 @@
 
 # Quorum
 
-**A drop-in feedback layer for any app — capture what users want, cluster it, and hand engineering a spec.**
+**Know what's important. Quorum turns scattered user feedback into a ranked, defensible answer to "what should we build next?"**
 
 *enough voices to make a decision legitimate*
 
@@ -23,43 +23,52 @@
 
 ## What it does
 
-Three jobs, in order of how hard they are to copy:
+**Not a bug tracker.** Bugs are one input among feature requests, confusion,
+praise, and support tickets — they all feed one ranked answer.
 
-**1. Capture** — get structured feedback out of a frustrated user with near-zero
-friction. A corner nub, a keyboard shortcut, an element picker that tells you
-*which component* is broken, and rage-shake on mobile. Plus passive frustration
-detection that notices dead clicks and reload-mashing without ever throwing a
-modal at someone who's already annoyed.
+**1. Aggregate and rank.** "Add dark mode," "the app hurts my eyes at night,"
+and "why is everything white" are one line item. Ordered by weighted unique
+users and growth rate, not by whoever upvoted loudest — and every row shows
+*why* it ranks where it does, down to the verbatim quotes.
 
-**2. Aggregate** — collapse thousands of differently-worded reports into a
-stable set of canonical issues. "Add dark mode," "the app hurts my eyes at
-night," and "why is everything white" are one line item. Ranked by weighted
-unique users and growth rate, not by whoever upvoted loudest.
+**2. Capture.** Structured input with near-zero friction: a corner nub, a
+keyboard shortcut, an element picker that tells you *which component* is
+broken, rage-shake on mobile, plus passive frustration detection that notices
+dead clicks and reload-mashing without ever throwing a modal at someone who's
+already annoyed.
 
-**3. Close the loop** — open the Linear/Jira/GitHub issue with a synthesized
+Capture isn't a separate product — it's what makes the ranking trustworthy.
+Route, app version, account weight, and frustration intensity are all ranking
+signals a plain feedback form can't produce.
+
+**3. Close the loop.** Open the Linear/Jira/GitHub issue with a synthesized
 spec, the verbatim quotes behind it, the affected user count, and repro data
-attached. Then tell the users who asked when it ships.
+attached. Then tell the people who asked when it ships.
+
+You don't need to install anything to see value: point
+[`@quorum/node`](docs/API.md#l3--quorumnode-server-side-ingest) at a support
+inbox and get a ranked list from feedback you already have.
 
 ## Why not just use a feedback board
 
 The structural openings this is built into:
 
-- **Bug capture and roadmap aggregation in one SDK.** Feedback-board products
-  are web-first and treat mobile as an afterthought; crash/bug SDKs own
-  shake-to-report but don't do prioritization. Nobody is comfortably in the
-  middle.
 - **Weighted prioritization, not vote counts.** Raw upvotes are a popularity
-  contest. Join feedback to plan tier, MRR, and retention risk and "top ticket
-  items" becomes revenue-weighted — a budget line item rather than a
-  nice-to-have.
+  contest dominated by whoever's loudest. Join feedback to plan tier, MRR, and
+  retention risk and the top items become revenue-weighted.
+- **Every input in one place.** Widget submissions, rage shakes, backend
+  exceptions, and support-inbox text cluster together. Feedback-board products
+  are web-first and treat mobile as an afterthought; crash/bug SDKs own
+  shake-to-report but don't rank anything. Nobody is comfortably in the middle.
+- **Evidence, not vibes.** Every ranked row and every generated summary drills
+  down to the quotes that produced it. A ranked list you can't interrogate is a
+  ranked list nobody believes.
 - **Write-side integrations.** Don't show a list. Open the ticket.
-- **Bring-your-own-model and self-host.** The clustering core is fully
-  deterministic and the LLM sits at the render edge, so "we can't send customer
-  feedback to a third party" stops being a dealbreaker.
+- **Bring-your-own-model and self-host.** The clustering and ranking core is
+  fully deterministic and the LLM sits at the render edge, so "we can't send
+  customer feedback to a third party" stops being a dealbreaker.
 - **Truly headless option.** Batteries-included widget *and* the primitives to
   build your own on our backend.
-- **Evidence, not vibes.** Every generated summary drills down to the quotes
-  that produced it.
 
 ## Target integration
 
@@ -92,7 +101,8 @@ quorum-nub { --quorum-accent: #7c3aed; --quorum-radius: 12px; }
 ```
 docs/            architecture, data model, protocol, privacy, ADRs
 packages/
-  core/          @quorum/core   — headless TS: protocol, queue, capture, state machine
+  core/          @quorum/core   — headless TS: protocol, logging, queue, capture, state machine
+  eval/          @quorum/eval   — clustering metrics, labeled corpus, scoring CLI
   web/           @quorum/web    — <quorum-nub> web component (planned)
   react/         @quorum/react  — hooks + wrapper (planned)
   node/          @quorum/node   — server-side ingest (planned)
@@ -100,6 +110,12 @@ services/
   api/           ingest + read API (planned)
   aggregator/    Python: embeddings, clustering, ranking (planned)
 examples/        integration demos (planned)
+```
+
+Tests run on Node's built-in runner with zero dependencies:
+
+```bash
+npm test            # node --test across all workspaces
 ```
 
 ## Design docs
@@ -114,20 +130,25 @@ examples/        integration demos (planned)
 | [ROADMAP.md](docs/ROADMAP.md) | Sequencing, and what's deliberately deferred |
 | [adr/](docs/adr/) | Decision records — what we chose, what we gave up, what would change our mind |
 
-The four decisions that shape everything else:
+The decisions that shape everything else:
 
-- [Ship the UI, not just the backend](docs/adr/0003-ship-the-ui-not-just-the-backend.md) — the moat is client-side
+- [Prioritization is the product](docs/adr/0012-prioritization-is-the-product.md) — the first session ends with a ranked list, not a feed
+- [Ship the UI, not just the backend](docs/adr/0003-ship-the-ui-not-just-the-backend.md) — capture quality *is* ranking quality
 - [Web Components + shadow DOM](docs/adr/0002-web-components-with-shadow-dom.md) — one UI, N thin adapters
 - [Deterministic core, LLM at the render edge](docs/adr/0005-deterministic-core-llm-at-render-edge.md) — reproducible, auditable, self-hostable
 - [Redact by default](docs/adr/0007-redact-by-default.md) — a pipeline that's safe only when configured correctly is unsafe
+- [No public roadmap](docs/adr/0011-no-public-roadmap.md) — a voting board turns weighted ranking back into a popularity contest
 
 ## Constraints we hold ourselves to
 
 - **≤15KB gzipped** for core + nub, panel and snapshot machinery lazy-loaded.
   CI fails on regression.
+- **Zero runtime dependencies** in `@quorum/core`. Tests use Node's built-in
+  runner; there is no test framework to install either.
 - **No screen-share permission prompt.** Ever. We serialize the DOM.
 - **No interrupting modals** at frustration threshold.
 - **The product works with the LLM turned off.** It degrades to medoid labels.
+- **Every ranked row is explainable** down to the verbatim quotes.
 - **Additive-only protocol changes** within a major version.
 
 ## Scope discipline
@@ -144,8 +165,9 @@ for someone to ask.
 
 - npm scope `@quorum/*` availability is **unverified**. Fallbacks: `@quorumhq/*`,
   `@usequorum/*`, `quorum-sdk`.
-- Does the hosted public roadmap belong in v1, or is it a distraction?
 - Self-host packaging: Docker Compose only, or a Helm chart too?
+- Ranking depends on `account_weight`, which needs `identify()` with meaningful
+  traits. What's the fallback for a team that won't wire revenue data in?
 
 ## License
 

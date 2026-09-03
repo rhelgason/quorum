@@ -41,6 +41,7 @@ Works in Rails, Django, WordPress, static HTML.
 | Attribute | Default | Notes |
 | --- | --- | --- |
 | `project` | — | Required. Public key. |
+| `kind` | `feature_request` | Default flow asks what the user would change. Reporting something broken is one path through it, not the entry point. |
 | `preset` | `soft` | `auto` samples host styles; opt-in only, never default |
 | `position` | `bottom-right` | `hidden` renders nothing — bring your own trigger |
 | `frustration` | `detect` | `detect` records signals silently; `prompt` also nudges |
@@ -153,9 +154,11 @@ adapters, not N UIs.
 
 ---
 
-## L4 — `@quorum/node` (server-side ingest)
+## L3 — `@quorum/node` (server-side ingest)
 
-No UI. This is how a NestJS/Express/Fastify backend participates.
+No UI, and the fastest path to value: point it at a support inbox and get a
+ranked list from feedback you already have, without installing a widget. This
+is also how a NestJS/Express/Fastify backend participates.
 
 ```ts
 import { Quorum } from '@quorum/node'
@@ -191,7 +194,7 @@ automatically when it ships.
 
 ---
 
-## Read API (dashboard, public roadmap, or your own UI)
+## Read API (dashboard, or your own UI)
 
 ```
 GET  /v0/issues?sort=score&status=open&limit=20
@@ -202,10 +205,14 @@ POST /v0/issues/:id/subscribe
 GET  /v0/changelog
 ```
 
-Every issue response carries its evidence. A customer can build a completely
-custom roadmap UI on this and never touch our components — which is the
-truly-headless promise, and the thing that keeps sophisticated teams from
-bouncing off L2.
+Every issue response carries its evidence, including the scoring components
+behind its rank. A customer can build a completely custom prioritization UI on
+this and never touch our components — the truly-headless promise, and the thing
+that keeps sophisticated teams from bouncing off L2.
+
+We don't ship a public end-user voting board on top of this
+([ADR-0011](adr/0011-no-public-roadmap.md)), but the endpoints are here if a
+customer wants to build one.
 
 ---
 
