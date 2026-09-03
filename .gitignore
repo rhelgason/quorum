@@ -51,6 +51,9 @@ data/raw/
 data/labeled/
 !data/labeled/.gitkeep
 
+# Local ingest service log — real user feedback, never commit it
+data/*.jsonl
+
 # Environment & secrets
 .env
 .env.*

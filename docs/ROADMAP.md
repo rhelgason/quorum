@@ -40,9 +40,12 @@ widget required to see value.
       ([ADR-0020](adr/0020-identity-is-never-guessed.md)); crashes group by
       stack and underrank rather than let a retry loop own the roadmap
       ([ADR-0021](adr/0021-unattributed-reports-underrank.md))
-- [ ] Ingest service + `submissions` table + presigned capture upload —
-      `@quorum/node` stores in memory and recomputes clusters on read, so
-      persistence and write-time assignment are what remain
+- [~] Ingest service — [`services/api`](../services/api/README.md) serves the
+      protocol write path and the ranked read API over `node:http` with zero
+      dependencies, backed by a durable append-only log that survives restarts
+      and deduplicates across them. **Not Postgres**, no presigned capture
+      upload, no rate limiter, and clusters are still recomputed per read;
+      write-time assignment with persisted centroids is the real remaining gap
 - [x] LSH near-duplicate collapse (SimHash over character shingles) — the
       primitive, with banded blocking. **Built, not yet wired into the
       clustering pre-pass**: making it a default needs an eval sweep, and its
@@ -71,7 +74,9 @@ widget required to see value.
 - [x] **Score explainability** — every ranked row carries its component
       breakdown, a one-line explanation, and the verbatim quotes behind it,
       served by `@quorum/node`'s read API
-- [ ] Ranked dashboard on top of it — the UI, not the data
+- [ ] Ranked dashboard on top of it — the UI, not the data. The endpoints it
+      would call are live: `GET /v0/issues`, `/v0/issues/:id`, and
+      `/v0/issues/:id/submissions`
 
 Import-first is deliberate. It proves the claim on the customer's own data
 instead of asking them to collect for six months first.

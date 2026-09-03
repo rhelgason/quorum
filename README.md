@@ -12,7 +12,7 @@
 
 > ### Status: early, partially built
 >
-> **Working today** (785 tests, zero runtime dependencies):
+> **Working today** (829 tests, zero runtime dependencies):
 > `@quorum/core` — capture protocol, ULID idempotency keys, a durable bounded
 > offline queue, ingest transport with backoff and the full error table, the
 > panel state machine, PII redaction, structured logging.
@@ -28,8 +28,10 @@
 > its pure layer is tested, but the DOM layer has never run in a browser here.
 > Treat it as a draft; see [its README](packages/web/README.md).
 >
-> **Not built yet:** the framework wrappers, a persistent ingest server, and
-> the dashboard. `@quorum/node` stores in memory and recomputes on
+> `@quorum/api` — the ingest and read API over `node:http`, with a durable
+> append-only store. Not Postgres, and clusters are still recomputed per read.
+>
+> **Not built yet:** the framework wrappers and the dashboard. `@quorum/node` stores in memory and recomputes on
 > read. The web integration snippets below describe the target API, not working
 > software.
 >
@@ -185,7 +187,7 @@ packages/
   web/           @quorum/web       — <quorum-nub> element. Pure layer tested; DOM layer unverified.
   react/         @quorum/react  — hooks + wrapper (planned)
 services/
-  api/           persistent ingest + HTTP read API (planned)
+  api/           @quorum/api       — node:http ingest + ranked read API, durable append-only store
 examples/
   support-inbox/ runnable demo — CSV in, ranked backlog out
 ```
@@ -193,8 +195,9 @@ examples/
 Tests run on Node's built-in runner with zero dependencies:
 
 ```bash
-npm test            # 785 tests, no install required
+npm test            # 829 tests, no install required
 npm run demo        # import an example support inbox, print a ranked backlog
+npm run serve       # ingest + read API on http://localhost:8787
 npm run eval        # clustering baselines + rank agreement against the corpus
 ```
 

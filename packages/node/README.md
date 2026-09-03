@@ -6,9 +6,10 @@ dependencies.
 No UI, and the fastest path to value: point it at a support inbox and get a
 ranked list out of feedback you already have, without installing a widget.
 
-> **Status: working, not publishable.** Every path below runs and is tested.
-> The package is `private` because it is a client for an ingest service that
-> does not exist yet — see [Why this isn't published](#why-this-isnt-published).
+> **Status: working, not yet publishable.** Every path below runs and is
+> tested, and [`services/api`](../../services/api/README.md) serves it over
+> HTTP. The package stays `private` until the cross-package import question is
+> resolved — see [Why this isn't published](#why-this-isnt-published).
 
 ## The claim, in one snippet
 
@@ -104,9 +105,10 @@ ingest is still open, as is measuring a real model
 
 ## Not implemented
 
-- **Persistence.** `MemoryStore` is the only store. The interface is
+- **Postgres.** `MemoryStore` and `FileStore` (append-only JSONL, durable
+  across restarts) are the two implementations. The interface is
   Postgres-shaped — async, project-scoped, idempotent on `(projectId, id)` — so
-  the swap is a new class, not a rewrite.
+  that swap is a new class, not a rewrite.
 - **Cluster identity across runs.** Clusters are recomputed on read. Insertion
   order is stable and leader-follower never reassigns, so ids are stable as
   feedback is appended — but the IDF table shifts as the corpus grows, which
@@ -125,6 +127,8 @@ package is `noEmit` and outside the build graph, exactly like
 [`@quorum/eval`](../eval/README.md). See
 [TESTING.md](../../docs/TESTING.md).
 
-It flips to a composite build when the ingest service it fronts exists.
-Publishing an SDK for a service that doesn't exist would be shipping a client
-to nowhere, so there is nothing lost by waiting.
+Resolving it means either building each package to `dist` before tests run —
+which costs the zero-install property the whole repo is built on — or moving
+the shared code behind published versions. That is a packaging decision worth
+making deliberately rather than in passing, and nothing is blocked on it in the
+meantime: `services/api` consumes this package by source today.

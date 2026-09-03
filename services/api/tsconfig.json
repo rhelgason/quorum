@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2022"
+    ],
+    "types": [
+      "node"
+    ],
+    // A service, not a published package — nothing here is ever imported by a
+    // customer, so there is nothing to emit. Same deep-relative-import posture
+    // as packages/node; see docs/TESTING.md.
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}

@@ -10,16 +10,18 @@
     "node": ">=20"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "services/*"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "typecheck": "tsc -p tsconfig.check.json",
-    "test": "node --test 'packages/*/src/**/*.test.ts'",
-    "test:watch": "node --test --watch 'packages/*/src/**/*.test.ts'",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude='**/cli.ts' --test-coverage-exclude='**/nub.ts' --test-coverage-lines=90 --test-coverage-branches=85 --test-coverage-functions=90 'packages/*/src/**/*.test.ts'",
+    "test": "node --test 'packages/*/src/**/*.test.ts' 'services/*/src/**/*.test.ts'",
+    "test:watch": "node --test --watch 'packages/*/src/**/*.test.ts' 'services/*/src/**/*.test.ts'",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude='**/cli.ts' --test-coverage-exclude='**/nub.ts' --test-coverage-lines=90 --test-coverage-branches=85 --test-coverage-functions=90 'packages/*/src/**/*.test.ts' 'services/*/src/**/*.test.ts'",
     "eval": "node packages/eval/src/cli.ts",
     "demo": "node examples/support-inbox/demo.ts",
+    "serve": "node services/api/src/cli.ts",
     "lint": "npm run lint --workspaces --if-present",
     "size": "npm run size --workspaces --if-present",
     "check": "npm run typecheck && npm run test:coverage"

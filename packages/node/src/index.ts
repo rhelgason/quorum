@@ -40,6 +40,9 @@ export type {
 export { MemoryStore } from './store.ts';
 export type { SubmissionStore } from './store.ts';
 
+export { FileStore } from './file-store.ts';
+export type { FileStoreOptions } from './file-store.ts';
+
 export { derivedId, dedupKey, resolveUserId, scrubVariableData } from './submission.ts';
 export type {
   Identity,
