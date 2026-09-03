@@ -6,9 +6,6 @@
     },
     {
       "path": "packages/aggregate"
-    },
-    {
-      "path": "packages/eval"
     }
   ]
 }

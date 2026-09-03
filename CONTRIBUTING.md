@@ -12,7 +12,8 @@ nvm use            # Node 24, pinned in .nvmrc
 npm test           # needs no dependencies at all — Node runs the TypeScript
 npm install        # only needed for typecheck/build
 npm run typecheck
-npm run eval       # clustering baseline report
+npm run build      # run this too — it catches what typecheck cannot
+npm run eval       # clustering baselines + a ranked backlog
 ```
 
 **There is no committed lockfile yet** — see

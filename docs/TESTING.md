@@ -7,12 +7,30 @@ type-stripping mean there is no framework to install and no build step before
 tests run.
 
 ```bash
-npm test              # node --test, discovers **/*.test.ts
-npm run test:watch
+npm test              # no install required
 npm run test:coverage # enforces line 90 / branch 85 / function 90
-npm run check         # typecheck + coverage — what CI runs
-npm run eval          # clustering baseline report (packages/eval)
+npm run typecheck     # needs `npm install`
+npm run build         # needs `npm install`
+npm run eval          # clustering baselines + a ranked backlog
 ```
+
+**Run `npm run build` before pushing, not just `typecheck`.** They exercise
+different compiler graphs and each catches errors the other misses:
+
+- `typecheck` (`tsconfig.check.json`) is one flat program over every package
+  with a uniform `lib`. It covers test files, which the build does not.
+- `build` (`tsc --build`) walks project references with each package's own
+  `rootDir`, `outDir`, and `lib`. It is the only thing that catches
+  cross-package import violations and per-package `lib` gaps.
+
+Both of those bit us: `packages/eval` imported `@quorum/aggregate` sources by
+deep relative path, which is fine for `node --test` but illegal across project
+references, and `@quorum/aggregate` was missing the DOM lib that `fetch` needs.
+The flat typecheck was clean in both cases.
+
+`packages/eval` is `noEmit` and outside the build graph — it is a dev-only
+harness with nothing to publish, which is also why its deep relative imports
+into `@quorum/aggregate` are acceptable.
 
 CLI entrypoints are excluded from coverage (`**/cli.ts`) and kept as thin
 shells over tested pure functions, so the threshold measures logic rather than
