@@ -39,6 +39,7 @@ import {
   type Linkage,
 } from '../../aggregate/src/consolidate.ts';
 import {
+  DEFAULT_EXCLUDED_KINDS,
   explain,
   rank,
   type RankableCluster,
@@ -125,9 +126,10 @@ export interface Issue {
   components: ScoreComponents;
   /** One-line human rendering of `components`. */
   explanation: string;
+  /** Members that counted toward the score. See `memberIds`. */
   submissionCount: number;
   uniqueUsers: number;
-  /** Kind breakdown across members — a mostly-`bug` issue reads differently. */
+  /** Kind breakdown across counted members — a mostly-`bug` issue reads differently. */
   kinds: Partial<Record<SubmissionKind, number>>;
   /**
    * Plurality route and the share of members on it. A high share on one route
@@ -135,6 +137,14 @@ export interface Issue {
    */
   topRoute?: { route: string; share: number };
   quotes: IssueQuote[];
+  /**
+   * Members that produced the score.
+   *
+   * Excluded kinds — `praise` by default — are absent, so every field on this
+   * object describes the same set of submissions. Pass
+   * `rank: { excludeKinds: [] }` for the raw cluster, which is what a merge
+   * review needs and a build list does not.
+   */
   memberIds: string[];
 }
 
@@ -181,10 +191,24 @@ export function buildIssues(
   const ranked = rank(rankable, { ...options.rank, now: options.now });
   const limited = options.limit === undefined ? ranked : ranked.slice(0, options.limit);
 
+  // The same rule ranking applied. Everything below presents an issue, and a
+  // presentation layer that filters differently produces a row whose title,
+  // evidence, and counts describe submissions that did not contribute to its
+  // score. That is not a display nit: it put a praise submission — "the
+  // keyboard shortcuts are great" — at the top of a *build* list, which is the
+  // exact outcome "praise is not work" exists to prevent.
+  const excludedKinds = new Set(options.rank?.excludeKinds ?? DEFAULT_EXCLUDED_KINDS);
+
   const issues: Issue[] = [];
   for (const entry of limited) {
-    const members = byCluster.get(entry.id);
-    if (members === undefined) continue;
+    const clustered = byCluster.get(entry.id);
+    if (clustered === undefined) continue;
+
+    // A ranked row shows exactly the evidence that produced its rank. Callers
+    // who want the unfiltered cluster pass `rank: { excludeKinds: [] }`, which
+    // is also how the offline tier inspects merge quality.
+    const members = clustered.filter((m) => !excludedKinds.has(m.kind));
+    if (members.length === 0) continue;
 
     const memberIds = members.map((m) => m.id);
     const labelId = medoid(memberIds, docs, { ...clusterOptions, threshold: 0 });

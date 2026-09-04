@@ -164,7 +164,14 @@ console.log(
 
 // The cost, stated rather than hidden. Aggressive average linkage pulls in
 // low-information singletons that share incidental vocabulary.
-const impure = merged.filter((issue) => Object.keys(issue.kinds).length > 1);
+//
+// Run with `excludeKinds: []` on purpose. The ranked list above hides praise,
+// because a build list should only show what it scored — but this is the
+// diagnostic view, and a merge that swallowed a praise ticket is exactly the
+// kind of mistake it exists to surface. Filtering here would let the tier hide
+// its own errors.
+const raw = await quorum.issues({ now: NOW, rank: { excludeKinds: [] } });
+const impure = raw.filter((issue) => Object.keys(issue.kinds).length > 1);
 if (impure.length > 0) {
   console.log(`\n  ${dim('The cost — issues that absorbed something unrelated:')}\n`);
   for (const issue of impure) {

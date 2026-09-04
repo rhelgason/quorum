@@ -80,6 +80,17 @@ export interface RankOptions {
 const DAY_MS = 86_400_000;
 
 /**
+ * Kinds kept out of the ranked build list by default. See "praise is not work".
+ *
+ * Exported because anything *presenting* a ranked issue has to apply the same
+ * rule ranking did. A presentation layer that filters differently will show a
+ * title, an evidence quote, or a member count drawn from submissions that were
+ * excluded from the score — numbers and words that disagree with each other in
+ * the same row.
+ */
+export const DEFAULT_EXCLUDED_KINDS: readonly SubmissionKind[] = ['praise'];
+
+/**
  * **Opinion 1 — account weight is logarithmic, not linear.**
  *
  * Linear MRR weighting makes the product answer "what does our biggest
@@ -157,7 +168,7 @@ export function rank(
   const growthMinVolume = options.growthMinVolume ?? 3;
   const maxGrowth = options.maxGrowth ?? 3;
   const mrrBaseline = options.mrrBaseline ?? 100;
-  const excluded = new Set(options.excludeKinds ?? ['praise']);
+  const excluded = new Set(options.excludeKinds ?? DEFAULT_EXCLUDED_KINDS);
 
   const ranked: RankedCluster[] = [];
 

@@ -171,6 +171,80 @@ describe('praise', () => {
   });
 });
 
+describe('presentation matches ranking', () => {
+  // A praise submission that clusters *with* real requests rather than into a
+  // praise-only cluster. This is the case that exposed both defects: the
+  // ranked list showed "1 submission" beside a breakdown summing to 2, and
+  // titled a build-list row with the praise sentence.
+  const mixed = [
+    sub({ id: 'd1', body: 'please add dark mode', userId: 'u:1' }),
+    sub({ id: 'd2', body: 'add dark mode please', userId: 'u:2' }),
+    sub({ id: 'p1', body: 'dark mode is great, thanks for adding it', userId: 'u:3', kind: 'praise' }),
+  ];
+
+  test('the kind breakdown sums to the submission count', () => {
+    for (const issue of buildIssues(mixed, { now: NOW })) {
+      const total = Object.values(issue.kinds).reduce((n, count) => n + count, 0);
+      assert.equal(total, issue.submissionCount, issue.title);
+    }
+  });
+
+  test('the explanation agrees with submissionCount', () => {
+    // Two different numbers for one thing in one row is worse than either
+    // number being wrong, because a reader cannot tell which to believe.
+    for (const issue of buildIssues(mixed, { now: NOW })) {
+      const stated = /(\d+) submission/.exec(issue.explanation)?.[1];
+      assert.equal(Number(stated), issue.submissionCount, issue.explanation);
+    }
+  });
+
+  test('an excluded kind never titles a ranked row', () => {
+    // ADR-0015 Opinion 4: "the scanner is magic" topping the roadmap is a bug.
+    // Picking the medoid across all members let exactly that happen.
+    for (const issue of buildIssues(mixed, { now: NOW })) {
+      assert.notEqual(issue.medoidId, 'p1');
+      assert.ok(!issue.title.includes('thanks for adding'), issue.title);
+    }
+  });
+
+  test('excluded members are absent from the evidence', () => {
+    // The row must show the evidence that produced its rank, not evidence the
+    // scorer threw away.
+    for (const issue of buildIssues(mixed, { now: NOW })) {
+      assert.equal(issue.quotes.some((q) => q.kind === 'praise'), false);
+      assert.equal(issue.memberIds.includes('p1'), false);
+    }
+  });
+
+  test('uniqueUsers counts only the users who scored', () => {
+    const issue = buildIssues(mixed, { now: NOW })[0];
+    assert.equal(issue?.uniqueUsers, 2);
+    assert.equal(issue?.submissionCount, 2);
+  });
+
+  test('asking for everything brings the excluded members back', () => {
+    const issue = buildIssues(mixed, { now: NOW, rank: { excludeKinds: [] } })[0];
+    assert.equal(issue?.submissionCount, 3);
+    assert.equal(issue?.kinds.praise, 1);
+    assert.ok(issue?.memberIds.includes('p1'));
+  });
+
+  test('the invariants hold across a mixed corpus', () => {
+    const corpus = [
+      ...twoTopics(),
+      sub({ id: 'x1', body: 'the scanner is absolute magic', userId: 'u:8', kind: 'praise' }),
+      sub({ id: 'x2', body: 'csv export is magic honestly', userId: 'u:9', kind: 'praise' }),
+    ];
+    for (const issue of buildIssues(corpus, { now: NOW })) {
+      const total = Object.values(issue.kinds).reduce((n, count) => n + count, 0);
+      assert.equal(total, issue.submissionCount);
+      assert.equal(issue.memberIds.length, issue.submissionCount);
+      assert.equal(issue.kinds.praise, undefined);
+      assert.ok(issue.quotes.length <= issue.submissionCount);
+    }
+  });
+});
+
 describe('account weighting', () => {
   test('a higher-revenue cohort outranks an equally sized free one', () => {
     const corpus = [
