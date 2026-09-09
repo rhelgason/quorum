@@ -118,7 +118,20 @@ export function nubClass(): CustomElementConstructor {
 
   /** Programmatic entry — the documented escape hatch for a custom trigger. */
   open(options?: { kind?: NubConfig['kind']; prefill?: string; context?: Record<string, unknown> }): void {
-    this.#machine.send({ type: 'open', ...(options !== undefined && { options }) });
+    // The `kind` attribute has to be applied here, not at construction. The
+    // machine takes a `defaultKind` but is built before any attribute has been
+    // read, so `<quorum-nub kind="bug">` parsed correctly into config and then
+    // opened a feature-request panel — a documented attribute that did
+    // nothing, and one no test without a DOM could have caught.
+    //
+    // Reading it per open rather than once also means a host that flips the
+    // attribute gets the new kind on the next open instead of the next reload.
+    const kind = options?.kind ?? this.#config?.kind;
+
+    this.#machine.send({
+      type: 'open',
+      options: { ...options, ...(kind !== undefined && { kind }) },
+    });
     this.#machine.send({ type: 'ready' });
   }
 
@@ -319,6 +332,21 @@ export function nubClass(): CustomElementConstructor {
     return this.#machine.state === 'error' && this.#machine.context.draft.trim() !== '';
   }
 
+  /**
+   * Put focus and the caret back after a re-render replaced the composer.
+   *
+   * Clamped to the current length because the machine, not the old DOM node,
+   * is the source of truth for the draft — if they ever disagree, the caret
+   * should land somewhere valid rather than throw.
+   */
+  #restoreComposer(caret: number): void {
+    const field = this.#root?.querySelector('.field');
+    if (!(field instanceof HTMLTextAreaElement)) return;
+    field.focus();
+    const at = Math.min(Math.max(caret, 0), field.value.length);
+    field.setSelectionRange(at, at);
+  }
+
   #panel(copy: ReturnType<typeof copyFor>, state: PanelState): HTMLElement {
     const panel = document.createElement('div');
     panel.className = 'panel';
@@ -339,12 +367,31 @@ export function nubClass(): CustomElementConstructor {
       field.placeholder = copy.placeholder;
       field.value = this.#machine.context.draft;
       field.addEventListener('input', () => {
-        // Typing after a failure is an implicit retry. Without this the
-        // machine ignores `edit` in `error` — it only accepts `retry` — so the
-        // user's revisions go nowhere and the eventual retry sends the text
-        // they had already decided was wrong.
-        if (this.#machine.state === 'error') this.#machine.send({ type: 'retry' });
-        this.#machine.send({ type: 'edit', draft: field.value });
+        const draft = field.value;
+        const caret = field.selectionStart ?? draft.length;
+
+        if (this.#machine.state === 'error') {
+          // Typing after a failure is an implicit retry: the machine only
+          // accepts `retry` from `error`, so without this the revision never
+          // reaches it and the eventual retry sends the text the user had
+          // already decided was wrong.
+          //
+          // The catch, and the reason this is not two lines: `retry` changes
+          // state, which re-renders the panel and replaces this textarea —
+          // and that render runs *before* the edit below, so it paints the
+          // pre-failure draft over the character just typed and drops the
+          // caret. Hence the explicit second render and the caret restore.
+          // Two renders in one frame, once per failure, in exchange for not
+          // eating a keystroke in front of someone whose submission just
+          // failed.
+          this.#machine.send({ type: 'retry' });
+          this.#machine.send({ type: 'edit', draft });
+          this.#render();
+          this.#restoreComposer(caret);
+          return;
+        }
+
+        this.#machine.send({ type: 'edit', draft });
         submit.disabled = !this.#canSend();
       });
       panel.append(field);

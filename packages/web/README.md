@@ -4,28 +4,37 @@ The `<quorum-nub>` custom element for [Quorum](../../README.md), and the
 browser client behind it. Shadow DOM, three presets, CSS custom property
 theming. Zero runtime dependencies.
 
-> ### Status: written, wired, and testable in a real browser — but not yet run in one here
+> ### Status: run in a real browser, and it found things
 >
 > The pure modules — attribute parsing, presets and stylesheet generation,
 > shortcut matching, panel copy, the client, storage adapters — are tested
-> (107 tests).
->
-> `nub.ts` now has a browser suite: 20 tests that drive an installed Chrome
-> over CDP and cover every line of the old "what is not verified" list. **They
-> have not been executed in the authoring environment**, because Chrome cannot
-> launch from it — a macOS Mach bootstrap denial, unrelated to Quorum, that
-> stops the browser before it prints a DevTools endpoint. On a normal machine:
+> (116 tests). `nub.ts` has a 20-test browser suite driving an installed
+> Chrome over CDP ([ADR-0022](../../docs/adr/0022-verify-the-dom-layer-over-cdp.md)).
 >
 > ```bash
 > npm run test:browser
 > ```
 >
-> What *has* been verified without a browser: every module the browser would
-> load resolves, type-strips clean, and imports no Node builtin
+> **It cannot be run in the environment this was authored in** — Chrome is
+> installed and will not start (a macOS Mach bootstrap denial, unrelated to
+> Quorum). It has been run on a normal machine, twice, and the second run is
+> the reason this section is worth reading:
+>
+> | Run | Result | What it found |
+> | --- | --- | --- |
+> | 1 | 1/20 | Two bugs in the CDP driver — `replMode` silently defeating `awaitPromise`, and a navigation wait that could resolve against `about:blank`. |
+> | 2 | 17/20 | Two real defects in the element, plus one wrong assertion in the suite itself. |
+>
+> The two defects are fixed and described below (`kind` never reaching the
+> state machine; typing after a failure being painted over). **The corrected
+> suite has not itself been re-run**, so treat 20/20 as expected rather than
+> observed.
+>
+> What is verified without a browser: every module the browser would load
+> resolves, type-strips clean, and imports no Node builtin
 > (`examples/saas-app/graph.test.ts`), and the whole write path works end to
 > end against the real HTTP service (`services/api/src/roundtrip.test.ts`).
-> That is delivery and wiring, not rendering. See
-> [ADR-0022](../../docs/adr/0022-verify-the-dom-layer-over-cdp.md).
+> That is delivery and wiring, not rendering.
 
 ## Usage
 
@@ -195,6 +204,27 @@ npm run size
 number is an upper bound: no minification, no mangling, no tree shaking. See
 [`tools/size`](../../tools/README.md#size--the-15kb-budget) for what it does
 and does not mean.
+
+## What running it in a browser caught
+
+Both of these were invisible to 900-odd passing tests, and neither is exotic.
+
+**`kind` did nothing.** `<quorum-nub kind="bug">` parsed correctly into config
+and then opened a feature-request panel — wrong prompt, wrong placeholder,
+wrong `kind` on the submission, so a bug report clustered and ranked as a
+feature request. The machine accepts a `defaultKind`, but it is constructed
+before any attribute has been read, so the parsed value never reached it. It is
+now applied per `open()`, which also means flipping the attribute takes effect
+on the next open rather than the next reload.
+
+**Typing after a failure was painted over.** The machine only accepts `retry`
+from `error`, so a revision typed into the box never reached it. Sending
+`retry` first fixed that and introduced something worse: the transition
+re-renders the panel and replaces the textarea, and that render happens before
+the edit — so the user watched the character they just typed disappear, along
+with their cursor, immediately after being told their submission failed. The
+input handler now completes the transition, applies the edit, re-renders once
+deliberately, and restores the caret.
 
 ## Still not built
 

@@ -34,8 +34,25 @@ repo could have caught: `Transport` stored `globalThis.fetch` on an options
 object and called it as `this.options.fetchImpl(...)`, which passes that object
 as `this`. Node's `fetch` tolerates it. Every browser throws `TypeError:
 Illegal invocation` — on the first flush, in the only environment the transport
-ships to. The fix is one bound wrapper; the point is that "tested" and "tested
-in the environment it runs in" were measurably different things here.
+ships to. The fix is one bound wrapper.
+
+**Running it paid again.** Two real defects in the element, from a suite whose
+first honest run was 17/20:
+
+- `<quorum-nub kind="bug">` parsed correctly and opened a feature-request
+  panel. The machine takes a `defaultKind` and is constructed before any
+  attribute has been read, so the parsed value never reached it — a documented
+  attribute that did nothing, and a bug report that would cluster and rank as
+  a feature request.
+- Typing after a failed submission was painted over. The `error → composing`
+  transition re-renders the panel and replaces the textarea, and that render
+  runs before the edit is applied — so the character just typed vanished,
+  along with the caret, seconds after the user was told their submission
+  failed.
+
+Neither is exotic, and neither is reachable without a DOM. "Tested" and "tested
+in the environment it runs in" were measurably different things here, three
+times over.
 
 ## Decision
 

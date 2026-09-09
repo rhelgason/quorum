@@ -154,20 +154,41 @@ describe('<quorum-nub> in a real browser', { skip }, () => {
   });
 
   browserTest('the generated stylesheet actually applies', async (page) => {
-    await mountNub(page, { project: 'pk_test_1' });
+    await mountNub(page, { project: 'pk_test_1', offset: '24' });
 
     // Computed style, not the presence of a <style> tag. The failure worth
     // catching is a stylesheet that parses but selects nothing.
-    const style = await page.evaluate<{ position: string; radius: string }>(`
+    //
+    // Both halves are checked because they come from different rules: the
+    // `:host` block positions the element itself, and `.trigger` styles the
+    // button inside it. Asserting `position: fixed` on the button was this
+    // test's own first bug — the host is the anchor, and the button is
+    // deliberately static inside it.
+    const style = await page.evaluate<{
+      hostPosition: string;
+      bottom: string;
+      right: string;
+      display: string;
+      radius: string;
+    }>(`
       (() => {
-        const button = ${ROOT}.querySelector('button');
-        const computed = getComputedStyle(button);
-        return { position: computed.position, radius: computed.borderRadius };
+        const host = getComputedStyle(${NUB});
+        const button = getComputedStyle(${ROOT}.querySelector('button'));
+        return {
+          hostPosition: host.position,
+          bottom: host.bottom,
+          right: host.right,
+          display: button.display,
+          radius: button.borderRadius,
+        };
       })()
     `);
 
-    assert.equal(style.position, 'fixed', 'the trigger anchors to the viewport');
-    assert.notEqual(style.radius, '0px', 'the preset sets a radius');
+    assert.equal(style.hostPosition, 'fixed', 'the host anchors to the viewport');
+    assert.equal(style.bottom, '24px', 'the offset reaches the anchor rule');
+    assert.equal(style.right, '24px');
+    assert.equal(style.display, 'inline-flex', 'the .trigger rule selects the button');
+    assert.notEqual(style.radius, '0px', 'the preset token resolves');
   });
 
   browserTest('a page-level custom property wins over the default token', async (page) => {
@@ -431,7 +452,12 @@ describe('<quorum-nub> in a real browser', { skip }, () => {
   browserTest('editing after a failure keeps the revision', async (page) => {
     await mountNub(page, { project: 'pk_test_1' });
 
-    const draft = await page.evaluate<string>(`
+    const result = await page.evaluate<{
+      state: string;
+      shown: string;
+      focused: boolean;
+      caret: number;
+    }>(`
       (async () => {
         const el = ${NUB};
         el.open();
@@ -448,13 +474,25 @@ describe('<quorum-nub> in a real browser', { skip }, () => {
         const after = ${ROOT}.querySelector('.field');
         after.value = 'revised attempt';
         after.dispatchEvent(new Event('input'));
-        return el.state === 'composing' ? 'composing:' + ${ROOT}.querySelector('.field').value : el.state;
+
+        const now = ${ROOT}.querySelector('.field');
+        return {
+          state: el.state,
+          shown: now.value,
+          focused: ${ROOT}.activeElement === now,
+          caret: now.selectionStart,
+        };
       })()
     `);
 
-    // The machine ignores `edit` in `error`, so without an implicit retry the
-    // user's revision goes nowhere and the retry sends the old text.
-    assert.equal(draft, 'composing:revised attempt');
+    // Two separate failures live here. The machine ignores `edit` in `error`,
+    // so without an implicit retry the revision never lands. And the retry
+    // re-renders, which replaced the textarea with one still showing the
+    // pre-failure text — the user watched their correction disappear.
+    assert.equal(result.state, 'composing');
+    assert.equal(result.shown, 'revised attempt', 'the revision was painted over');
+    assert.equal(result.focused, true, 'focus was dropped mid-sentence');
+    assert.equal(result.caret, 'revised attempt'.length, 'the caret jumped');
   });
 
   browserTest('changing the project builds a new client', async (page) => {

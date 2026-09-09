@@ -31,11 +31,13 @@
 > path, all verified against the real service over a real socket.
 > `@quorum/eval` — labeled corpus, clustering and rank-agreement metrics.
 >
-> **The honest gap:** `nub.ts` has a 20-test browser suite that drives an
-> installed Chrome over CDP ([ADR-0022](docs/adr/0022-verify-the-dom-layer-over-cdp.md)),
-> and **it has never been executed** — Chrome will not launch in the
-> environment this was authored in. Everything short of rendering is verified;
-> rendering is not. `npm run test:browser` on any normal machine closes it.
+> **The honest gap:** `nub.ts` has a 20-test browser suite driving an installed
+> Chrome over CDP ([ADR-0022](docs/adr/0022-verify-the-dom-layer-over-cdp.md)).
+> It **cannot run in the environment this was authored in** — Chrome will not
+> launch there — but it has been run elsewhere, and the last run was 17/20:
+> it caught two real defects in the element that 900-odd other tests missed.
+> Those are fixed; the corrected suite has not itself been re-run, so treat
+> 20/20 as expected rather than observed. `npm run test:browser`.
 >
 > **Also not Postgres.** The store is an append-only JSONL log and clusters are
 > recomputed on every read.

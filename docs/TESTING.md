@@ -82,11 +82,21 @@ test:browser` sets — turns the skip into a failure, because otherwise a broken
 launch is indistinguishable from a missing browser and the DOM layer quietly
 stops being tested again.
 
-> **They have not run in the authoring environment.** Chrome is installed here
+> **They cannot run in the authoring environment.** Chrome is installed here
 > and will not start: a macOS Mach bootstrap denial, unrelated to Quorum, that
-> kills it before it prints a DevTools endpoint. So the browser suite is
-> written, wired, and unexecuted, which is exactly the thing this repo does not
-> pretend about. Run it on a normal machine.
+> kills it before it prints a DevTools endpoint. Run it on a normal machine.
+>
+> It has been. The first run was 1/20 and the failures were all in the driver;
+> the second was 17/20 and the failures were all real — two defects in the
+> element and one wrong assertion in the suite. Both defects are fixed and
+> described in [`packages/web/README.md`](../packages/web/README.md). The
+> corrected suite has not itself been re-run, so 20/20 is expected rather than
+> observed, and this note stays until someone has seen it.
+
+A note on iterating here, since it is unusual: each run costs a round trip
+through a human. That changes the economics — batch the fixes, harden the test
+helper in the same pass as the driver, and prefer an assertion that says which
+of several things broke over one that says something broke.
 
 `nub.ts` stays excluded from the coverage gate regardless, and not as a dodge:
 it executes in Chrome, not in Node, so Node's coverage instrumentation cannot
