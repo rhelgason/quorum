@@ -56,15 +56,21 @@ widget required to see value.
       accuracy degrades on short text, which is much of mobile feedback
 - [x] **Lexical clustering (TF-IDF cosine + leader-follower)** — shipped in
       `@quorum/aggregate`. Necessary, not sufficient: 5/10 rank agreement.
-- [ ] **Local sentence embeddings + hybrid similarity** — promoted from v0.4.
+- [~] **Local sentence embeddings + hybrid similarity** — promoted from v0.4.
       Lexical cannot bridge "add dark mode" ↔ "the app destroys my eyes at
-      night", and `dark-mode` is the largest issue in the corpus.
+      night", and `dark-mode` is the largest issue in the corpus. The blend and
+      the measurement are wired end to end and exercised in CI by a hashing
+      stand-in; what remains is pointing it at a real model.
 - [x] Pluggable embedder interface + OpenAI-compatible adapter, absent by
       default. Free and local via Ollama; no model name in the source tree.
 - [x] Hybrid similarity (`semanticWeight`), defaulting to lexical-only
-- [ ] **Validate against a real embedding model** — the oracle ablation says a
-      perfect signal gives 10/10 and the bar is low, but no actual model has
-      been measured ([ADR-0019](adr/0019-embedding-quality-bar.md))
+- [~] **Validate against a real embedding model** — the harness is now built
+      and the last step is a model. `npm run eval` runs a `semanticWeight` ×
+      `threshold` sweep against whatever `QUORUM_EMBED_*` points at, with an
+      on-disk vector cache so a sweep is paid for once. **No model has been
+      measured yet**; the bar is also higher than ADR-0019 implied, because
+      rank agreement turned out to reward over-merging and now carries a
+      conflation guard ([ADR-0023](adr/0023-rank-agreement-needs-a-conflation-guard.md))
 - [x] Offline consolidation to repair online over-splitting — raises the
       lexical ceiling from 5/10 to 6/10 and makes a high online threshold the
       right default ([ADR-0018](adr/0018-two-tier-clustering-validated.md))

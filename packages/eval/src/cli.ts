@@ -27,8 +27,15 @@ import {
   structural,
   structuralPlusToken,
 } from './baselines.ts';
-import { toDocs } from './adapt.ts';
+import { toDocs, withVectors } from './adapt.ts';
 import { clusterDocs } from '../../aggregate/src/cluster.ts';
+import { embedCorpus, resolveEmbedder } from './embed-run.ts';
+import { openEmbeddingCache } from './embed-store.ts';
+import { formatSweep, sweep } from './sweep.ts';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 /** Fixed evaluation clock, so the report is reproducible across runs. */
 const EVAL_NOW = '2026-09-01T00:00:00Z';
@@ -113,6 +120,42 @@ console.log(
 // ---------------------------------------------------------------------------
 // The actual product output: a ranked list with evidence.
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Hybrid sweep — the open question in ADR-0019.
+// ---------------------------------------------------------------------------
+
+const resolved = resolveEmbedder();
+console.log(`\n  hybrid sweep — ${resolved.provenance}`);
+
+if (resolved.embedder !== undefined) {
+  const cachePath = process.env['QUORUM_EMBED_CACHE'] ?? join(here, '../.cache/embeddings.jsonl');
+  const cache = openEmbeddingCache(cachePath);
+
+  try {
+    const { vectors, embedded, reused } = await embedCorpus(
+      resolved.embedder,
+      corpus.submissions.map((s) => s.body),
+      cache,
+    );
+    console.log(`  ${String(embedded)} embedded, ${String(reused)} reused   cache: ${cachePath}\n`);
+    console.log(formatSweep(sweep(corpus, withVectors(docs, vectors), resolved.embedder.name, { now: EVAL_NOW })));
+  } catch (error) {
+    // A missing model is the common case and is not a crash: the rest of the
+    // report is still worth printing, and the message has to be specific
+    // enough to act on.
+    console.log(
+      `  could not embed: ${error instanceof Error ? error.message : String(error)}\n` +
+        '  Is the endpoint running, and is the model pulled?',
+    );
+  }
+} else {
+  console.log(
+    `  skipped. With a local Ollama:\n` +
+      '    QUORUM_EMBED_PROVIDER=ollama QUORUM_EMBED_BASE_URL=http://127.0.0.1:11434/v1 \\\n' +
+      '      QUORUM_EMBED_MODEL=<your-model> npm run eval',
+  );
+}
 
 console.log('\n  ── Ranked backlog from perfect clustering (the target) ──\n');
 console.log(formatRankedList(corpus, truthLabels(corpus), EVAL_NOW, 10));

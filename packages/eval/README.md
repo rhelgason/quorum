@@ -221,3 +221,46 @@ how this corpus was written, which is why the finding was acted on.
 That last check matters most: relabeling a submission without updating the
 adversarial set leaves the set asserting the opposite of the truth, and
 everything downstream still produces a confident-looking number.
+
+## Measuring an embedding model
+
+`npm run eval` ends with a `semanticWeight` × `threshold` sweep, scored on
+top-10 rank agreement. Without an embedder configured it says so and skips.
+
+```bash
+# A real model — the only numbers that mean anything about quality.
+QUORUM_EMBED_PROVIDER=ollama \
+QUORUM_EMBED_BASE_URL=http://127.0.0.1:11434/v1 \
+QUORUM_EMBED_MODEL=<your-embedding-model> \
+  npm run eval
+
+# The hybrid path, without a model. Proves the wiring, says nothing about quality.
+QUORUM_EMBED_PROVIDER=stand-in npm run eval
+```
+
+Vectors are cached to `packages/eval/.cache/embeddings.jsonl` (override with
+`QUORUM_EMBED_CACHE`), keyed on `(model, text)`. The first run pays for
+embedding; every later sweep is instant and offline, and the file can be
+handed to someone with no model at all so they can reproduce the numbers.
+
+### Read the three grids, not the headline
+
+Top-`k` rank agreement has a degenerate zone just above `k`: merge hard enough
+and each surviving blob carries a top truth issue as its plurality label, so
+the metric pays for conflation. On this corpus the first version of the sweep
+picked a cell with **17 clusters against a truth of 50** and called it a
+two-point win.
+
+So the report prints cluster counts and pairwise precision beside the score,
+marks over-merged cells with `!`, and refuses to let one win —
+[ADR-0023](../../docs/adr/0023-rank-agreement-needs-a-conflation-guard.md).
+When a run tells you a model is worth `+N`, check the cluster count in the
+winning cell before believing it.
+
+### The stand-in is not a model
+
+`QUORUM_EMBED_PROVIDER=stand-in` is the hashing trick: tokens hashed into a
+fixed-width vector. It encodes roughly what TF-IDF already encodes, so it
+cannot bridge paraphrase and **should score `+0`**. That is what it does, and
+that agreement between prediction and measurement is the evidence the blend is
+wired correctly. A run where it appears to help is measuring a bug.

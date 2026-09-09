@@ -25,6 +25,10 @@ Pods/
 local.properties
 *.iml
 
+# Embedding caches — derived, sometimes large, and model-specific
+.cache/
+**/.cache/
+
 # Test & coverage
 coverage/
 .nyc_output/

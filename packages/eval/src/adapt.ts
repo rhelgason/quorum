@@ -20,6 +20,26 @@ export function toDocs(submissions: readonly Submission[]): Doc[] {
   }));
 }
 
+/**
+ * Attach precomputed vectors to docs, index-aligned.
+ *
+ * Separate from {@link toDocs} because embedding is async and batched while
+ * `toDocs` is neither, and because a sweep reuses one set of vectors across
+ * every configuration it tries.
+ *
+ * Throws on a length mismatch rather than zipping what it can. A short vector
+ * array would silently leave the tail of the corpus lexical-only, and the
+ * result would look like a model that helps less than it does.
+ */
+export function withVectors(docs: readonly Doc[], vectors: readonly Float64Array[]): Doc[] {
+  if (docs.length !== vectors.length) {
+    throw new Error(
+      `expected one vector per doc: got ${String(vectors.length)} for ${String(docs.length)} docs`,
+    );
+  }
+  return docs.map((doc, i) => ({ ...doc, vector: vectors[i] as Float64Array }));
+}
+
 export function toRankMember(s: Submission): RankMember {
   return { userId: s.userId, kind: s.kind as SubmissionKind, clientTs: s.clientTs };
 }

@@ -57,6 +57,21 @@ export {
 export type { EmbedEnv, Embedder, OpenAICompatibleEmbedderConfig } from './embed.ts';
 
 export {
+  cacheKey,
+  cachingEmbedder,
+  createHashingEmbedder,
+  createMemoryEmbeddingCache,
+  parseCacheKey,
+} from './embed-cache.ts';
+export type {
+  CachingEmbedder,
+  CachingEmbedderStats,
+  EmbeddingCache,
+  HashingEmbedderOptions,
+  MemoryEmbeddingCache,
+} from './embed-cache.ts';
+
+export {
   createOpenAICompatibleProvider,
   nullProvider,
   providerFromEnv,
