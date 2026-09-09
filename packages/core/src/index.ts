@@ -32,7 +32,7 @@ export type { UlidOptions } from './ulid.ts';
 export { createMemoryStorage, OfflineQueue } from './queue.ts';
 export type { QueueOptions, QueueStats, QueueStorage } from './queue.ts';
 
-export { backoffDelay, parseRetryAfter, Transport } from './transport.ts';
+export { backoffDelay, INGEST_PATH, parseRetryAfter, Transport } from './transport.ts';
 export type { FlushResult, TransportOptions } from './transport.ts';
 
 export { Emitter } from './emitter.ts';

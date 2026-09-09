@@ -1,8 +1,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { backoffDelay, parseRetryAfter, Transport } from './transport.ts';
-import { OfflineQueue } from './queue.ts';
+import { backoffDelay, INGEST_PATH, parseRetryAfter, Transport } from './transport.ts';
+import { createMemoryStorage, OfflineQueue } from './queue.ts';
 import { createLogger } from './log.ts';
 import type { CaptureEvent } from './protocol.ts';
 
@@ -390,5 +390,87 @@ describe('parseRetryAfter', () => {
     assert.equal(parseRetryAfter(null, 0), undefined);
     assert.equal(parseRetryAfter('  ', 0), undefined);
     assert.equal(parseRetryAfter('soon', 0), undefined);
+  });
+});
+
+describe('the default fetch', () => {
+  test('is called with the global as its receiver, not the options object', async () => {
+    // Regression test for a browser-only crash. `fetch` checks its `this`:
+    // stored on an object and invoked as `this.options.fetchImpl(...)`, a
+    // browser throws `TypeError: Illegal invocation`. Node does not, so this
+    // has to be asserted structurally rather than by calling it.
+    //
+    // Simulated here by replacing the global with a function that refuses any
+    // receiver other than the global — which is what a browser does.
+    const original = globalThis.fetch;
+    let receiver: unknown = 'never called';
+
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: function strictFetch(this: unknown): Promise<Response> {
+        receiver = this;
+        if (this !== globalThis && this !== undefined) {
+          throw new TypeError('Illegal invocation');
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ accepted: [], duplicate: [] }), { status: 202 }),
+        );
+      },
+    });
+
+    try {
+      const queue = new OfflineQueue({ storage: createMemoryStorage() });
+      queue.enqueue({
+        id: '01JDEFAULTFETCH0001',
+        kind: 'bug',
+        source: 'nub',
+        clientTs: '2026-09-09T00:00:00.000Z',
+      });
+
+      // No fetchImpl, so the transport falls back to the global.
+      const transport = new Transport({ endpoint: '', project: 'pk', queue });
+      const result = await transport.flush();
+
+      assert.equal(result.sent, 1, 'the default fetch threw or never ran');
+      assert.ok(
+        receiver === globalThis || receiver === undefined,
+        `fetch was called with ${String(receiver)} as its receiver`,
+      );
+    } finally {
+      Object.defineProperty(globalThis, 'fetch', {
+        configurable: true,
+        writable: true,
+        value: original,
+      });
+    }
+  });
+
+  test('posts to the path the protocol publishes', async () => {
+    const queue = new OfflineQueue({ storage: createMemoryStorage() });
+    queue.enqueue({
+      id: '01JPATHCHECK000001',
+      kind: 'bug',
+      source: 'nub',
+      clientTs: '2026-09-09T00:00:00.000Z',
+    });
+
+    const urls: string[] = [];
+    const transport = new Transport({
+      endpoint: 'https://ingest.example.com',
+      project: 'pk',
+      queue,
+      fetchImpl: (async (url: string) => {
+        urls.push(url);
+        return new Response(JSON.stringify({ accepted: [], duplicate: [] }), { status: 202 });
+      }) as unknown as typeof fetch,
+    });
+
+    await transport.flush();
+
+    // The assertion nobody wrote for a week, while the transport posted to
+    // /v0/events and the service served /v0/ingest.
+    assert.deepEqual(urls, [`https://ingest.example.com${INGEST_PATH}`]);
+    assert.equal(INGEST_PATH, '/v0/ingest');
   });
 });

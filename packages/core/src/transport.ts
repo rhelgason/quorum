@@ -29,7 +29,21 @@ import { PROTOCOL_VERSION, type CaptureEnvelope, type CaptureEvent } from './pro
 import type { OfflineQueue } from './queue.ts';
 import type { Logger } from './log.ts';
 
+/**
+ * The write path, spelled once.
+ *
+ * This constant exists because it was wrong. The transport posted to
+ * `/v0/events` while `services/api` served `/v0/ingest`, and nothing caught it
+ * for a week: the client's tests inject a fake `fetch` and assert on the body,
+ * the server's tests call the router directly, and no test had ever run both
+ * halves against each other. The path is now a shared constant *and* a row in
+ * `docs/PROTOCOL.md`, so the two cannot drift again without the doc drifting
+ * too.
+ */
+export const INGEST_PATH = '/v0/ingest';
+
 export interface TransportOptions {
+  /** Ingest origin, without a trailing slash. `''` means same-origin. */
   endpoint: string;
   /** Public key. Write-only; safe in a client bundle. */
   project: string;
@@ -100,7 +114,15 @@ export class Transport {
       maxRetries: options.maxRetries ?? 4,
       baseDelayMs: options.baseDelayMs ?? 1000,
       maxDelayMs: options.maxDelayMs ?? 30_000,
-      fetchImpl: options.fetchImpl ?? globalThis.fetch,
+      // Bound, and this is not defensive style — it is a browser-only crash.
+      //
+      // `fetch` is defined on the global and checks its `this`. Storing it on
+      // an object and calling `this.options.fetchImpl(...)` passes that object
+      // as `this`, which browsers reject with `TypeError: Illegal invocation`.
+      // Node's `fetch` is lenient about it, so every test in this repo passed
+      // while the one environment the transport actually ships to would have
+      // thrown on the first flush.
+      fetchImpl: options.fetchImpl ?? ((input, init) => globalThis.fetch(input, init)),
       now: options.now ?? Date.now,
       sleep: options.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms))),
       random: options.random ?? Math.random,
@@ -184,7 +206,7 @@ export class Transport {
     for (let attempt = 0; attempt <= this.options.maxRetries; attempt++) {
       let response: Response;
       try {
-        response = await this.options.fetchImpl(`${this.options.endpoint}/v0/events`, {
+        response = await this.options.fetchImpl(`${this.options.endpoint}${INGEST_PATH}`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(this.buildEnvelope(payload)),
