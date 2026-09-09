@@ -51,7 +51,7 @@ async function handle(
   maxBodyBytes: number,
   allowOrigin: string,
 ): Promise<void> {
-  const send = (status: number, body: unknown): void => {
+  const send = (status: number, body: unknown, extra: Record<string, string> = {}): void => {
     const payload = JSON.stringify(body);
     res.writeHead(status, {
       'content-type': 'application/json; charset=utf-8',
@@ -59,9 +59,14 @@ async function handle(
       'access-control-allow-origin': allowOrigin,
       'access-control-allow-headers': 'content-type',
       'access-control-allow-methods': 'GET, POST, OPTIONS',
+      // Retry-After has to survive a cross-origin read, or a browser client
+      // sees a 429 with no idea how long to wait and falls back to its own
+      // backoff — which is the behaviour the header exists to override.
+      'access-control-expose-headers': 'retry-after',
       // Every response is computed fresh; caching a ranked list would show a
       // reader yesterday's priorities with today's timestamp.
       'cache-control': 'no-store',
+      ...extra,
     });
     res.end(payload);
   };
@@ -75,16 +80,18 @@ async function handle(
     const url = new URL(req.url ?? '/', 'http://localhost');
     const { body, tooLarge } = await readBody(req, maxBodyBytes);
 
+    const clientKey = req.socket?.remoteAddress;
     const request: ApiRequest = {
       method: req.method ?? 'GET',
       path: url.pathname,
       query: url.searchParams,
       ...(body !== undefined && { body }),
       ...(tooLarge && { tooLarge }),
+      ...(clientKey !== undefined && { clientKey }),
     };
 
     const response = await route(request);
-    send(response.status, response.body);
+    send(response.status, response.body, response.headers ?? {});
   } catch (error) {
     // A 500 tells a conforming client to back off and retry, which is right
     // for something we did not anticipate — unlike a 400, which would make it

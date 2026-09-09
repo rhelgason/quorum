@@ -103,6 +103,9 @@ service happens to be serving it.
 | `POST` | `/v0/ingest` | The envelope, batched. The only write path. |
 | `POST` | `/v0/captures` | Presigned capture upload. **Not implemented.** |
 
+The write path is rate limited and answers `429` with `Retry-After`; see
+[`services/api`](../services/api/README.md#the-write-path-is-rate-limited-the-read-path-is-not).
+
 > **This section exists because the two halves disagreed.** The browser
 > transport posted to `/v0/events` and `services/api` served `/v0/ingest`, for
 > a week, with both suites green — the client's tests inject a fake `fetch` and

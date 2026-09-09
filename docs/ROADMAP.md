@@ -44,8 +44,11 @@ widget required to see value.
       protocol write path and the ranked read API over `node:http` with zero
       dependencies, backed by a durable append-only log that survives restarts
       and deduplicates across them. **Not Postgres**, no presigned capture
-      upload, no rate limiter, and clusters are still recomputed per read;
+      upload and clusters are still recomputed per read;
       write-time assignment with persisted centroids is the real remaining gap
+- [x] Write-path rate limiting, so the protocol's `429` row has a server that
+      sends it — a sliding window with `Retry-After`, checked before the body
+      is parsed, and exercised end to end against a real client
 - [x] The ingest path pinned in [PROTOCOL.md](PROTOCOL.md#endpoints) and
       covered by a real client-to-server test. It was wrong for a week — the
       transport posted to `/v0/events`, the service served `/v0/ingest`, and

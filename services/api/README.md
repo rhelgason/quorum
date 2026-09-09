@@ -48,14 +48,37 @@ discards a user's feedback.
 | `401` | Project key mismatch | Disable for the session |
 | `413` | Body over `maxBodyBytes` | Strip the capture, retry the envelope |
 | `405` | Wrong method | — |
+| `429` | Over the write rate limit, with `Retry-After` | Wait exactly that long, then retry |
 | `500` | Anything unanticipated | Back off and retry |
 
 A duplicate is `202`, not an error. It is what the client's idempotency key
 exists to make safe, and treating a replayed offline flush as a failure would
 make the queue look broken every time it worked.
 
-`429` is not implemented — there is no rate limiter. That is a real gap in
-front of an untrusted internet.
+### The write path is rate limited; the read path is not
+
+A sliding window, 120 writes per minute per address by default, applied before
+the body is parsed — a limiter that first parses the payload it is about to
+reject is doing the work an attacker wanted done. The response carries
+`Retry-After` in whole seconds (rounded **up**, because `Retry-After: 0` reads
+as "retry immediately") and the exact milliseconds in the body, so a client can
+use either.
+
+This closed a hole that was client-side-only: `@quorum/core`'s transport has
+always implemented the `429` row in full, parsing `Retry-After` in both seconds
+and HTTP-date form, and no server had ever sent one. That retry path is now
+exercised against a real server in
+[`src/roundtrip.test.ts`](src/roundtrip.test.ts).
+
+**Reads are not limited.** They are the expensive ones — clusters are
+recomputed per request — but they are not the untrusted surface: the write key
+is public by design and ships in every page that loads the widget. Limiting
+reads needs its own key and its own number, and guessing at both is worse than
+leaving it off and saying so here.
+
+**The counters are per process.** Two instances behind a load balancer each
+enforce the limit separately. Sharing them means Redis or the database, and
+neither is in this service yet.
 
 ## Persistence: honest about what it is
 

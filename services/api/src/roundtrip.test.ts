@@ -25,6 +25,7 @@ import { Transport } from '../../../packages/core/src/transport.ts';
 import { Quorum } from '../../../packages/node/src/client.ts';
 import { QuorumClient } from '../../../packages/web/src/client.ts';
 import { createApiServer } from './server.ts';
+import { createRateLimiter } from './rate-limit.ts';
 
 const NOW = new Date('2026-09-08T12:00:00.000Z');
 
@@ -239,5 +240,103 @@ describe('browser client → HTTP service', () => {
     // payload should never have contained it in the first place.
     assert.ok(!stored.body.includes('4242 4242 4242 4242'));
     assert.ok(!stored.body.includes('leak@example.com'));
+  });
+});
+
+describe('the 429 path, end to end', () => {
+  let limited: Server;
+  let limitedBase: string;
+
+  before(async () => {
+    const quorum429 = new Quorum({ projectId: 'p429', now: () => NOW });
+    limited = createApiServer({
+      quorum: quorum429,
+      now: () => NOW,
+      // Two writes per window, so the third is refused deterministically.
+      rateLimiter: createRateLimiter({ limit: 2, windowMs: 60_000, now: () => NOW.getTime() }),
+    });
+    await new Promise<void>((resolve) => limited.listen(0, '127.0.0.1', resolve));
+    limitedBase = `http://127.0.0.1:${String((limited.address() as AddressInfo).port)}`;
+  });
+
+  after(async () => {
+    await new Promise<void>((resolve) => limited.close(() => resolve()));
+  });
+
+  function envelope(id: string): string {
+    return JSON.stringify({
+      v: 0,
+      sentAt: NOW.toISOString(),
+      project: 'pk_live_1',
+      events: [{ id, kind: 'bug', source: 'nub', clientTs: NOW.toISOString(), body: 'x' }],
+    });
+  }
+
+  async function post(id: string): Promise<Response> {
+    return fetch(`${limitedBase}/v0/ingest`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: envelope(id),
+    });
+  }
+
+  it('answers 429 with a Retry-After a client can act on', async () => {
+    assert.equal((await post('01JLIMIT0000000001')).status, 202);
+    assert.equal((await post('01JLIMIT0000000002')).status, 202);
+
+    const refused = await post('01JLIMIT0000000003');
+    assert.equal(refused.status, 429);
+
+    // The header rounds up to whole seconds; the body carries the exact
+    // milliseconds. A client may use either, so both have to be right.
+    assert.equal(refused.headers.get('retry-after'), '60');
+    const body = (await refused.json()) as { error: string; retryAfterMs: number };
+    assert.equal(body.error, 'rate_limited');
+    assert.ok(body.retryAfterMs > 0 && body.retryAfterMs <= 60_000);
+  });
+
+  it('exposes Retry-After across origins', async () => {
+    // Without this a browser client reads a 429 with no visible header and
+    // falls back to its own backoff — overriding the number the server just
+    // took the trouble to compute.
+    const refused = await post('01JLIMIT0000000004');
+    assert.match(refused.headers.get('access-control-expose-headers') ?? '', /retry-after/i);
+  });
+
+  it('the transport honours it instead of hammering', async () => {
+    const queue = new OfflineQueue({ storage: createMemoryStorage() });
+    const slept: number[] = [];
+
+    const client = new QuorumClient({
+      project: 'pk_live_1',
+      endpoint: limitedBase,
+      queue,
+      anonId: 'anon-429',
+      now: () => NOW,
+      newId: () => '01JLIMITCLIENT00001',
+      route: () => '/reports',
+      transport: new Transport({
+        endpoint: limitedBase,
+        project: 'pk_live_1',
+        queue,
+        maxRetries: 1,
+        // Recorded rather than performed — the assertion is about what the
+        // client decided to wait, not about waiting.
+        sleep: async (ms) => {
+          slept.push(ms);
+        },
+      }),
+    });
+
+    const outcome = await client.submit({ draft: 'rate limited please wait', kind: 'bug' });
+
+    // The whole point of the protocol's 429 row: the client backs off by the
+    // server's number rather than its own jittered guess, and the submission
+    // stays queued rather than being dropped. This is the first time that path
+    // has been exercised against a server that actually sends one.
+    assert.equal(outcome.status, 'queued');
+    assert.equal(queue.size, 1);
+    assert.ok(slept.length > 0, 'the client did not back off at all');
+    assert.equal(slept[0], 60_000, `expected the server's Retry-After, got ${String(slept[0])}`);
   });
 });

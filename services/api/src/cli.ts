@@ -14,11 +14,18 @@
 import { Quorum } from '../../../packages/node/src/client.ts';
 import { FileStore } from '../../../packages/node/src/file-store.ts';
 import { createApiServer } from './server.ts';
+import { createRateLimiter } from './rate-limit.ts';
 
 const port = Number(process.env['QUORUM_PORT'] ?? 8787);
 const dataPath = process.env['QUORUM_DATA'] ?? './data/quorum.jsonl';
 const projectId = process.env['QUORUM_PROJECT'] ?? 'default';
 const projectKey = process.env['QUORUM_PROJECT_KEY'];
+
+// On by default, unlike most things here. The write key is public by design —
+// it ships in every page that loads the widget — so an unlimited ingest is
+// open to anyone who reads the page source. `0` disables it.
+const rateLimit = Number(process.env['QUORUM_RATE_LIMIT'] ?? 120);
+const rateWindowMs = Number(process.env['QUORUM_RATE_WINDOW_MS'] ?? 60_000);
 
 const store = new FileStore({
   path: dataPath,
@@ -33,6 +40,9 @@ const quorum = new Quorum({ projectId, store });
 const server = createApiServer({
   quorum,
   now: () => new Date(),
+  ...(Number.isFinite(rateLimit) && rateLimit > 0
+    ? { rateLimiter: createRateLimiter({ limit: rateLimit, windowMs: rateWindowMs }) }
+    : {}),
   ...(projectKey !== undefined && { projectKey }),
   ...(process.env['QUORUM_ALLOW_ORIGIN'] !== undefined && {
     allowOrigin: process.env['QUORUM_ALLOW_ORIGIN'],
@@ -45,6 +55,13 @@ server.listen(port, () => {
   console.log(`  data      ${dataPath}${count > 0 ? '' : ' (new)'}`);
   console.log(`  project   ${projectId}`);
   console.log(`  auth      ${projectKey === undefined ? 'open — set QUORUM_PROJECT_KEY to require one' : 'project key required'}`);
+  console.log(
+    `  writes    ${
+      Number.isFinite(rateLimit) && rateLimit > 0
+        ? `${String(rateLimit)} per ${String(Math.round(rateWindowMs / 1000))}s per address`
+        : 'unlimited — QUORUM_RATE_LIMIT=0'
+    }`,
+  );
   console.log('\n  POST /v0/ingest          GET /v0/issues');
   console.log('  GET  /v0/issues/:id      GET /v0/issues/:id/submissions');
   console.log('  GET  /v0/health\n');

@@ -17,6 +17,7 @@
 import { PROTOCOL_VERSION, type CaptureEnvelope } from '../../../packages/core/src/protocol.ts';
 import type { Quorum } from '../../../packages/node/src/client.ts';
 import type { BuildIssuesOptions, Issue } from '../../../packages/node/src/issues.ts';
+import { retryAfterSeconds, type RateLimiter } from './rate-limit.ts';
 
 export interface ApiRequest {
   method: string;
@@ -27,11 +28,21 @@ export interface ApiRequest {
   body?: unknown;
   /** Set when the body exceeded the configured limit. */
   tooLarge?: boolean;
+  /**
+   * Who is calling, for rate limiting. The socket's remote address.
+   *
+   * Deliberately not read from `X-Forwarded-For`: behind no proxy that header
+   * is caller-controlled, so trusting it by default would let anyone reset
+   * their own limit by inventing an address.
+   */
+  clientKey?: string;
 }
 
 export interface ApiResponse {
   status: number;
   body: unknown;
+  /** Extra response headers. `Retry-After` on a 429, so far. */
+  headers?: Record<string, string>;
 }
 
 export interface RouterOptions {
@@ -46,6 +57,15 @@ export interface RouterOptions {
   projectKey?: string;
   /** Defaults applied to every issues query. */
   issueDefaults?: Partial<Omit<BuildIssuesOptions, 'now'>>;
+  /**
+   * Applied to the write path only.
+   *
+   * Reads are expensive here — clusters are recomputed per request — but they
+   * are not the untrusted surface: the write key is in every page that loads
+   * the widget. Limiting reads too would need its own key and its own number,
+   * and guessing at both is worse than leaving it off and saying so.
+   */
+  rateLimiter?: RateLimiter;
 }
 
 export type Router = (request: ApiRequest) => Promise<ApiResponse>;
@@ -114,6 +134,26 @@ function notFound(): ApiResponse {
  * as an error would make every replayed offline flush look like a failure.
  */
 async function ingest(request: ApiRequest, options: RouterOptions): Promise<ApiResponse> {
+  // Before anything else, including the size check: a limiter that first
+  // parses the payload it is about to reject is doing the work an attacker
+  // wanted done.
+  if (options.rateLimiter !== undefined) {
+    const decision = options.rateLimiter.check(request.clientKey ?? 'anonymous');
+    if (!decision.allowed) {
+      return {
+        status: 429,
+        body: {
+          error: 'rate_limited',
+          message: 'too many requests',
+          // The protocol's IngestError carries this, so a client need not
+          // parse a header to back off correctly.
+          retryAfterMs: decision.retryAfterMs,
+        },
+        headers: { 'retry-after': String(retryAfterSeconds(decision.retryAfterMs)) },
+      };
+    }
+  }
+
   // 413 before parsing: the point of the cap is to not hold the payload.
   if (request.tooLarge === true) {
     return {
