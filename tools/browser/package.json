@@ -1,0 +1,11 @@
+{
+  "name": "@quorum/browser",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Zero-dependency Chrome DevTools Protocol driver, for testing the one package that needs a real DOM.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "license": "MIT"
+}

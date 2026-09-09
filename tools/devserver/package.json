@@ -1,0 +1,11 @@
+{
+  "name": "@quorum/devserver",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Static server that type-strips TypeScript on the fly, so a browser can load this repo's sources unbundled.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "license": "MIT"
+}
