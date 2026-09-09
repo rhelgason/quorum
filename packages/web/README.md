@@ -8,7 +8,7 @@ theming. Zero runtime dependencies.
 >
 > The pure modules — attribute parsing, presets and stylesheet generation,
 > shortcut matching, panel copy, the client, storage adapters — are tested
-> (116 tests). `nub.ts` has a 20-test browser suite driving an installed
+> (116 tests). `nub.ts` has a **26-test browser suite** driving an installed
 > Chrome over CDP ([ADR-0022](../../docs/adr/0022-verify-the-dom-layer-over-cdp.md)).
 >
 > ```bash
@@ -17,18 +17,19 @@ theming. Zero runtime dependencies.
 >
 > **It cannot be run in the environment this was authored in** — Chrome is
 > installed and will not start (a macOS Mach bootstrap denial, unrelated to
-> Quorum). It has been run on a normal machine, twice, and the second run is
-> the reason this section is worth reading:
+> Quorum). It has been run elsewhere three times, and the history is the
+> reason this section is worth reading:
 >
 > | Run | Result | What it found |
 > | --- | --- | --- |
 > | 1 | 1/20 | Two bugs in the CDP driver — `replMode` silently defeating `awaitPromise`, and a navigation wait that could resolve against `about:blank`. |
 > | 2 | 17/20 | Two real defects in the element, plus one wrong assertion in the suite itself. |
+> | 3 | 20/20 | Green. |
 >
-> The two defects are fixed and described below (`kind` never reaching the
-> state machine; typing after a failure being painted over). **The corrected
-> suite has not itself been re-run**, so treat 20/20 as expected rather than
-> observed.
+> **Six element-picker tests were added after run 3 and have never executed.**
+> So: everything the suite covered as of run 3 is verified in a real browser;
+> the picker's rendering and event handling are not. That is the current edge
+> of what is known, and the next `npm run test:browser` moves it.
 >
 > What is verified without a browser: every module the browser would load
 > resolves, type-strips clean, and imports no Node builtin

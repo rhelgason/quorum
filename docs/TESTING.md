@@ -68,7 +68,7 @@ server's tests call the router directly, and nothing ever put the two on
 opposite ends of one connection. **The seam between two components is a
 component**, and it needs its own tests.
 
-**3. The element renders** — `packages/web/src/nub.browser.test.ts`. 20 tests
+**3. The element renders** — `packages/web/src/nub.browser.test.ts`. 26 tests
 driving an installed Chromium-family browser over CDP with a dependency-free
 client ([ADR-0022](adr/0022-verify-the-dom-layer-over-cdp.md)): shadow root
 attachment, computed styles, page-level custom properties beating the defaults,
@@ -86,12 +86,13 @@ stops being tested again.
 > and will not start: a macOS Mach bootstrap denial, unrelated to Quorum, that
 > kills it before it prints a DevTools endpoint. Run it on a normal machine.
 >
-> It has been. The first run was 1/20 and the failures were all in the driver;
-> the second was 17/20 and the failures were all real — two defects in the
-> element and one wrong assertion in the suite. Both defects are fixed and
-> described in [`packages/web/README.md`](../packages/web/README.md). The
-> corrected suite has not itself been re-run, so 20/20 is expected rather than
-> observed, and this note stays until someone has seen it.
+> It has been, three times. Run 1 was 1/20 and every failure was in the driver;
+> run 2 was 17/20 and every failure was real — two defects in the element and
+> one wrong assertion in the suite; run 3 was green. All of that is written up
+> in [`packages/web/README.md`](../packages/web/README.md).
+>
+> Six element-picker tests were added after run 3 and have not executed. The
+> suite is 26 tests, 20 of them verified in a real browser.
 
 A note on iterating here, since it is unusual: each run costs a round trip
 through a human. That changes the economics — batch the fixes, harden the test
