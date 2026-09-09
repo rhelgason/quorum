@@ -558,4 +558,170 @@ describe('<quorum-nub> in a real browser', { skip }, () => {
     const rendered = await page.evaluate<boolean>(`!!${ROOT}.querySelector('.trigger')`);
     assert.equal(rendered, true, 'a typo must not break the page this is embedded in');
   });
+
+  // -- element picker -------------------------------------------------------
+
+  browserTest('the picker produces a selector that finds the element again', async (page) => {
+    await mountNub(page, { project: 'pk_test_1', picker: 'on' });
+
+    const result = await page.evaluate<{ selector: string; resolves: boolean; same: boolean }>(`
+      (async () => {
+        document.body.insertAdjacentHTML('beforeend', \`
+          <main>
+            <form class="checkout">
+              <button class="submit" id="pay-now">Pay</button>
+            </form>
+          </main>\`);
+
+        const mod = await import('/packages/web/src/picker.ts');
+        const target = document.querySelector('#pay-now');
+        const described = mod.describeElement(target);
+
+        return {
+          selector: described.selector,
+          resolves: document.querySelector(described.selector) !== null,
+          same: document.querySelector(described.selector) === target,
+        };
+      })()
+    `);
+
+    // The property that cannot be faked without a DOM, and the only one that
+    // matters: a selector nobody can resolve is a screenshot with extra steps.
+    assert.equal(result.resolves, true, `"${result.selector}" matched nothing`);
+    assert.equal(result.same, true, `"${result.selector}" matched the wrong element`);
+  });
+
+  browserTest('a selector survives a page with no ids or test ids', async (page) => {
+    await mountNub(page, { project: 'pk_test_1' });
+
+    const result = await page.evaluate<{ selector: string; same: boolean }>(`
+      (async () => {
+        document.body.insertAdjacentHTML('beforeend', \`
+          <section><ul><li>one</li><li>two</li><li>three</li></ul></section>\`);
+
+        const mod = await import('/packages/web/src/picker.ts');
+        const target = document.querySelectorAll('li')[2];
+        const described = mod.describeElement(target);
+
+        return {
+          selector: described.selector,
+          same: document.querySelector(described.selector) === target,
+        };
+      })()
+    `);
+
+    assert.equal(result.same, true, `"${result.selector}" did not find the third item`);
+  });
+
+  browserTest('the described element carries a bbox and the styles that explain it', async (page) => {
+    await mountNub(page, { project: 'pk_test_1' });
+
+    const described = await page.evaluate<{
+      bbox: [number, number, number, number];
+      computed: Record<string, string>;
+    }>(`
+      (async () => {
+        document.body.insertAdjacentHTML('beforeend',
+          '<button id="ghost" style="pointer-events:none;opacity:0.5;width:200px;height:40px">Nope</button>');
+        const mod = await import('/packages/web/src/picker.ts');
+        return mod.describeElement(document.querySelector('#ghost'));
+      })()
+    `);
+
+    assert.equal(described.bbox[2], 200, 'width');
+    assert.equal(described.bbox[3], 40, 'height');
+    // The whole point of capturing computed styles: this is the answer to
+    // "why didn't the button work", sitting right in the capture.
+    assert.equal(described.computed['pointer-events'], 'none');
+    assert.equal(described.computed['opacity'], '0.5');
+  });
+
+  browserTest('picking highlights, selects, and does not click the page', async (page) => {
+    await mountNub(page, { project: 'pk_test_1', picker: 'on' });
+
+    const result = await page.evaluate<{
+      overlayShown: boolean;
+      selector: string;
+      hostClicks: number;
+      state: string;
+    }>(`
+      (async () => {
+        document.body.insertAdjacentHTML('beforeend',
+          '<button id="danger" style="position:fixed;left:0;top:0;width:120px;height:40px">Delete</button>');
+        const danger = document.querySelector('#danger');
+
+        let hostClicks = 0;
+        danger.addEventListener('click', () => { hostClicks++; });
+
+        const el = ${NUB};
+        el.open();
+        await el.pick();
+
+        danger.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 10, clientY: 10 }));
+        const overlayShown = document.querySelector('[data-quorum-picker]') !== null;
+
+        danger.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 10, clientY: 10 }));
+        await new Promise((r) => setTimeout(r, 30));
+
+        return {
+          overlayShown,
+          selector: el.state === 'composing' ? 'composing' : el.state,
+          hostClicks,
+          state: el.state,
+        };
+      })()
+    `);
+
+    assert.equal(result.overlayShown, true, 'no highlight overlay appeared');
+    // Picking "Delete account" must describe it, not press it.
+    assert.equal(result.hostClicks, 0, 'the host page received the picking click');
+    assert.equal(result.state, 'composing', 'picking should return to the composer');
+  });
+
+  browserTest('escape cancels picking and keeps the draft', async (page) => {
+    await mountNub(page, { project: 'pk_test_1', picker: 'on' });
+
+    const result = await page.evaluate<{ state: string; draft: string; overlay: boolean }>(`
+      (async () => {
+        const el = ${NUB};
+        el.open();
+        const field = ${ROOT}.querySelector('.field');
+        field.value = 'this button is broken';
+        field.dispatchEvent(new Event('input'));
+
+        await el.pick();
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        await new Promise((r) => setTimeout(r, 20));
+
+        return {
+          state: el.state,
+          draft: ${ROOT}.querySelector('.field').value,
+          overlay: document.querySelector('[data-quorum-picker]') !== null,
+        };
+      })()
+    `);
+
+    // Picking is a detour, not a restart — the words the user already typed
+    // are still there when it comes back.
+    assert.equal(result.state, 'composing');
+    assert.equal(result.draft, 'this button is broken');
+    assert.equal(result.overlay, false, 'the overlay outlived the picker');
+  });
+
+  browserTest('the picker overlay never leaks after disconnect', async (page) => {
+    await mountNub(page, { project: 'pk_test_1', picker: 'on' });
+
+    const leaked = await page.evaluate<boolean>(`
+      (async () => {
+        const el = ${NUB};
+        el.open();
+        await el.pick();
+        el.remove();
+        await new Promise((r) => setTimeout(r, 20));
+        return document.querySelector('[data-quorum-picker]') !== null;
+      })()
+    `);
+
+    assert.equal(leaked, false);
+  });
 });

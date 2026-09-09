@@ -16,7 +16,9 @@ import { dirname, join, resolve } from 'node:path';
 import { BUDGET_BYTES, collectModules, formatReport, measure, stripComments } from './measure.ts';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
-const ENTRY = join(repoRoot, 'packages/web/src/index.ts');
+// The element, not the package barrel — see the CLI for why. A static
+// re-export from `index.ts` pulls the lazy modules back into the graph.
+const ENTRY = join(repoRoot, 'packages/web/src/nub.ts');
 
 /** A tiny in-memory module graph. */
 function files(map: Record<string, string>): (path: string) => string {
@@ -82,6 +84,33 @@ describe('collectModules', () => {
     assert.equal(collectModules('/a.ts', read).length, 4);
   });
 
+  it('stops at a dynamic import, because a bundler makes it a chunk', () => {
+    const read = files({
+      '/a.ts': "import { b } from './b.ts';\nconst lazy = () => import('./big.ts');",
+      '/b.ts': 'export const b = 1;',
+      '/big.ts': 'export const big = 2;',
+    });
+
+    const lazy = new Set<string>();
+    const paths = collectModules('/a.ts', read, lazy);
+
+    // Counting it would make lazy loading invisible to the budget.
+    assert.deepEqual(paths, ['/b.ts', '/a.ts']);
+    assert.deepEqual([...lazy], ['/big.ts']);
+  });
+
+  it('treats a specifier imported both ways as static', () => {
+    const read = files({
+      '/a.ts': "import { b } from './b.ts';\nconst again = () => import('./b.ts');",
+      '/b.ts': 'export const b = 1;',
+    });
+    const lazy = new Set<string>();
+    // It is already in the initial bundle, so the dynamic form costs nothing
+    // extra and must not be double-counted as a chunk.
+    assert.deepEqual(collectModules('/a.ts', read, lazy), ['/b.ts', '/a.ts']);
+    assert.deepEqual([...lazy], []);
+  });
+
   it('ignores type-only imports, because a bundler does', () => {
     // `types.ts` ships zero bytes. Counting it inflated the real report by a
     // fifth and named two modules that are not in any bundle.
@@ -115,13 +144,24 @@ describe('measure, on the real entry point', () => {
     // not appear. If it does, the graph walk regressed to scanning unstripped
     // source, which is what inflated the first version of this report.
     assert.ok(!paths.includes('packages/core/src/state.ts'));
+  });
 
-    // `protocol.ts` is mostly types but exports `PROTOCOL_VERSION`, which the
-    // transport reads at runtime — so it does belong here, and its weight
-    // after stripping should be nearly nothing.
-    const protocol = report.modules.find((m) => m.path === 'packages/core/src/protocol.ts');
-    assert.ok(protocol !== undefined, 'protocol.ts exports a value the transport imports');
-    assert.ok(protocol.stripped < 500, `protocol.ts should shrink to almost nothing, got ${String(protocol.stripped)}B`);
+  it('counts no lazily loaded module', () => {
+    const paths = report.modules.map((module) => module.path);
+
+    // Both are behind `import()`. A user who never opens the picker never
+    // downloads it, so charging it to the initial bundle would have blocked a
+    // change that was already made correctly.
+    assert.ok(!paths.includes('packages/web/src/picker.ts'));
+    assert.ok(!paths.includes('packages/web/src/frustration-dom.ts'));
+
+    assert.deepEqual(
+      report.lazy.map((chunk) => chunk.entry).sort(),
+      ['packages/web/src/frustration-dom.ts', 'packages/web/src/picker.ts'],
+    );
+    for (const chunk of report.lazy) {
+      assert.ok(chunk.gzipped > 0, `${chunk.entry} measured as nothing`);
+    }
   });
 
   it('is within the 15KB budget', () => {

@@ -57,21 +57,41 @@ export function stripSource(code: string, path: string): string {
  * with `import`. A doc comment line begins with `*`. So the anchor separates
  * them exactly.
  */
-export function importSpecifiers(source: string): string[] {
-  const patterns = [
+export interface ImportRef {
+  specifier: string;
+  /**
+   * True for `import('…')`.
+   *
+   * A bundler emits these as separate chunks fetched on demand, so anything
+   * measuring an initial bundle has to stop at this edge rather than walk
+   * through it.
+   */
+  dynamic: boolean;
+}
+
+export function importSpecifiers(source: string): ImportRef[] {
+  const patterns: [RegExp, boolean][] = [
     // import x from '…' / export { x } from '…' / import type … from '…'
-    /^[ \t]*(?:import|export)\s[^;'"]*?\sfrom\s*['"]([^'"]+)['"]/gm,
+    [/^[ \t]*(?:import|export)\s[^;'"]*?\sfrom\s*['"]([^'"]+)['"]/gm, false],
     // import '…' — side effect only
-    /^[ \t]*import\s*['"]([^'"]+)['"]/gm,
+    [/^[ \t]*import\s*['"]([^'"]+)['"]/gm, false],
     // await import('…')
-    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+    [/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g, true],
   ];
 
-  const found: string[] = [];
-  for (const pattern of patterns) {
-    for (const match of source.matchAll(pattern)) found.push(match[1] as string);
+  const found = new Map<string, ImportRef>();
+  for (const [pattern, dynamic] of patterns) {
+    for (const match of source.matchAll(pattern)) {
+      const specifier = match[1] as string;
+      // A specifier imported both ways is statically needed, so the static
+      // reading wins.
+      const existing = found.get(specifier);
+      if (existing === undefined || (existing.dynamic && !dynamic)) {
+        found.set(specifier, { specifier, dynamic });
+      }
+    }
   }
-  return [...new Set(found)];
+  return [...found.values()];
 }
 
 /**

@@ -226,11 +226,90 @@ with their cursor, immediately after being told their submission failed. The
 input handler now completes the transition, applies the edit, re-renders once
 deliberately, and restores the caret.
 
+## The element picker
+
+"The button doesn't work" costs an engineer twenty minutes of guessing.
+`main > form.checkout > button.submit`, 240×40 at (620, 380),
+`pointer-events: none` costs them nothing. That is why `docs/PROTOCOL.md` calls
+this the web's killer capture: **not a screenshot but a jump-to-line.**
+
+```js
+await document.querySelector('quorum-nub').pick()
+```
+
+The panel collapses while picking — it would otherwise be covering the thing
+the user is trying to point at — and the draft survives, because picking is a
+detour rather than a restart. Escape cancels.
+
+Selector durability is the whole difficulty, and the preference order is:
+a test id (`data-testid` and friends, the only attribute a team has promised
+not to churn), then a hand-written `id`, then tag plus hand-written classes,
+then a structural path. "Hand-written" is doing real work there — `css-1x2y3z`,
+`:r7:` and `Button_root__a1b2c` are rejected, because a selector built on a
+generated identifier is *specific and wrong*: it resolves today, matches
+nothing after the next deploy, and looks precise the entire time.
+
+The overlay is one fixed box with `pointer-events: none` rather than an outline
+on the hovered element, which would fight the host's styles and — on anything
+with a layout-affecting hover rule — move the target. The selecting click is
+captured and cancelled, so picking "Delete account" describes it rather than
+pressing it.
+
+## Frustration detection
+
+The users who are actually stuck do not fill in feedback forms; they leave.
+Clicking a dead button four times, reloading twice, bouncing between two pages
+— those are evidence from people who will never type anything, and they are a
+*ranking* input rather than telemetry.
+
+**Behaviour, not inferred sentiment.** Nothing guesses at mood from text. A
+dead click is a fact about the DOM; "seems annoyed" is a guess that would end
+up weighting somebody's roadmap.
+
+| Signal | What it takes |
+| --- | --- |
+| `dead_click` | A click after which nothing changed — no mutation, no navigation, no focus change, no scroll |
+| `rage_click` | Three clicks on one spot within a second, counted once per burst |
+| `form_error_repeat` | One form failing validation twice |
+| `reload` | Each reload |
+| `console_error_spike` | Three uncaught errors within five seconds |
+| `nav_thrash` | Four navigations within ten seconds |
+| `escape_mash` | Three Escapes within two seconds |
+| `scroll_thrash` | Four direction reversals within five seconds |
+
+Scored as `1 - exp(-Σ wᵢnᵢ)`, so it saturates: thirty dead clicks is the same
+person still stuck, not ten times more upset than three.
+
+**It never interrupts** ([ADR-0010](../../docs/adr/0010-never-interrupt-the-frustrated-user.md)).
+`detect` records silently and is the default. `prompt` dispatches a
+`quorum:frustrated` event at most once per session — an event, not a modal,
+because only the host knows what else is on screen. Someone mashing a broken
+button does not want to be asked how their day is going.
+
+Half the test suite for this asserts what does *not* fire: a double click, a
+long read, five deliberate clicks on "next page", one mistyped email. A
+detector that reads ordinary use as distress is worse than none, because it
+would quietly promote whichever page people use most.
+
+## Both are loaded on demand
+
+`import()`, not a static import. Adding them statically took core + nub from
+12.2KB to 17.1KB gzipped and the CI size gate refused it — which is exactly
+what the README always meant by "panel and snapshot machinery lazy-loaded".
+
+```
+gzipped     13.0KB   against a 15.0KB budget
+
+loaded on demand, not counted against the budget:
+    2.8KB  packages/web/src/frustration-dom.ts
+    2.4KB  packages/web/src/picker.ts
+```
+
 ## Still not built
 
-The element picker, frustration detection, DOM capture, and the console and
-network ring buffers. All four attach to the `captureRef` field the client
-currently leaves empty, and all four are v0.2/v0.3.
+DOM capture and the console and network ring buffers. Both attach to the
+`captureRef` field the client currently leaves empty, and both need presigned
+upload in the service, which does not exist yet.
 
 Cross-browser coverage. The browser suite drives whatever Chromium-family
 browser is installed — no pinned version, no Firefox, no WebKit.

@@ -55,6 +55,13 @@ export interface SizeReport {
   gzipped: number;
   budget: number;
   withinBudget: boolean;
+  /**
+   * Entry points reached only through `import()`, with their own gzipped size.
+   *
+   * Not counted against the budget: the browser fetches these on demand, and
+   * a user who never opens the picker never downloads it.
+   */
+  lazy: { entry: string; gzipped: number }[];
 }
 
 /**
@@ -137,7 +144,11 @@ export function stripComments(source: string): string {
  * `@quorum/web` are supposed to have none. One showing up should be a loud
  * failure rather than a silently uncounted byte.
  */
-export function collectModules(entry: string, read = (path: string): string => readFileSync(path, 'utf8')): string[] {
+export function collectModules(
+  entry: string,
+  read = (path: string): string => readFileSync(path, 'utf8'),
+  lazy?: Set<string>,
+): string[] {
   const ordered: string[] = [];
   const seen = new Set<string>();
 
@@ -145,11 +156,20 @@ export function collectModules(entry: string, read = (path: string): string => r
     if (seen.has(path)) return;
     seen.add(path);
 
-    for (const specifier of importSpecifiers(stripSource(read(path), path))) {
+    for (const { specifier, dynamic } of importSpecifiers(stripSource(read(path), path))) {
       if (!specifier.startsWith('.')) {
         throw new Error(`${path} imports "${specifier}" — this graph must have no dependencies`);
       }
-      visit(resolve(dirname(path), specifier));
+      const target = resolve(dirname(path), specifier);
+
+      // A dynamic import is a chunk boundary. Following it would count code
+      // the browser never downloads unless someone opens the picker, and
+      // would make lazy loading invisible to the budget.
+      if (dynamic) {
+        lazy?.add(target);
+        continue;
+      }
+      visit(target);
     }
 
     // Pushed after its imports so the concatenation is in dependency order,
@@ -169,7 +189,8 @@ export function measure(
   const root = options.root ?? process.cwd();
   const budget = options.budget ?? BUDGET_BYTES;
 
-  const paths = collectModules(entry, read);
+  const lazyEntries = new Set<string>();
+  const paths = collectModules(entry, read, lazyEntries);
 
   let raw = 0;
   const modules: ModuleSize[] = [];
@@ -201,6 +222,23 @@ export function measure(
   const bundle = withoutComments.join('\n');
   const gzipped = gzipSync(Buffer.from(bundle), { level: 9 }).length;
 
+  // Each lazy entry measured as its own chunk, including whatever it pulls in
+  // that the initial bundle does not already have.
+  const lazy = [...lazyEntries]
+    .map((lazyEntry) => ({
+      entry: relative(root, lazyEntry),
+      gzipped: gzipSync(
+        Buffer.from(
+          collectModules(lazyEntry, read)
+            .filter((path) => !paths.includes(path))
+            .map((path) => stripComments(stripSource(read(path), path)))
+            .join('\n'),
+        ),
+        { level: 9 },
+      ).length,
+    }))
+    .sort((a, b) => b.gzipped - a.gzipped);
+
   return {
     entry: relative(root, resolve(entry)),
     modules: modules.sort((a, b) => b.stripped - a.stripped),
@@ -211,6 +249,7 @@ export function measure(
     gzipped,
     budget,
     withinBudget: gzipped <= budget,
+    lazy,
   };
 }
 
@@ -226,6 +265,14 @@ export function formatReport(report: SizeReport): string {
   lines.push('');
   lines.push(`  gzipped     ${kb(report.gzipped)}   against a ${kb(report.budget)} budget`);
   lines.push(`  (with comments kept, it would be ${kb(report.gzippedWithComments)})`);
+  if (report.lazy.length > 0) {
+    lines.push('');
+    lines.push('  loaded on demand, not counted against the budget:');
+    for (const chunk of report.lazy) {
+      lines.push(`    ${kb(chunk.gzipped).padStart(7)}  ${chunk.entry}`);
+    }
+  }
+
   lines.push('');
   lines.push('  largest modules, types and comments removed:');
   for (const module of report.modules.slice(0, 8)) {

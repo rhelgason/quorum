@@ -42,8 +42,8 @@
 > **Also not Postgres.** The store is an append-only JSONL log and clusters are
 > recomputed on every read.
 >
-> **Not built yet:** the framework wrappers, DOM capture, the element picker,
-> frustration detection, and merge/split review UI.
+> **Not built yet:** the framework wrappers, DOM capture, and merge/split
+> review UI.
 >
 > Follow [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's shipping and
 > [`docs/adr/`](docs/adr/) for why. Three roadmap assumptions have already been

@@ -24,6 +24,8 @@ import { ulid } from '../../core/src/ulid.ts';
 import { parseAttributes, type NubConfig } from './attributes.ts';
 import { QuorumClient } from './client.ts';
 import { copyFor } from './copy.ts';
+import type { FrustrationListener } from './frustration-dom.ts';
+import type { PickerHandle } from './picker.ts';
 import { matchesShortcut, isTypingTarget, parseShortcut, type Chord } from './shortcut.ts';
 import { stylesheet } from './styles.ts';
 
@@ -40,6 +42,8 @@ export interface QuorumNubElement extends HTMLElement {
   identify(externalId: string, traits?: UserBlock['traits']): void;
   /** Forget the identified user. Call on logout. */
   reset(): void;
+  /** Start the element picker. Resolves once it is showing. */
+  pick(): Promise<void>;
   readonly state: PanelState;
   readonly client: QuorumClient | undefined;
 }
@@ -71,6 +75,11 @@ export function nubClass(): CustomElementConstructor {
   #onKeydown: ((event: KeyboardEvent) => void) | undefined;
   #client: QuorumClient | undefined;
   #detachConnectivity: (() => void) | undefined;
+  #frustration: FrustrationListener | undefined;
+  #loadingFrustration = false;
+  #picker: PickerHandle | undefined;
+  /** `prompt` mode offers once per session, never twice (ADR-0010). */
+  #prompted = false;
   /** Queued identify() calls, replayed onto the client once it exists. */
   #pendingIdentity: { externalId: string; traits?: UserBlock['traits'] } | undefined;
 
@@ -92,6 +101,7 @@ export function nubClass(): CustomElementConstructor {
     }
 
     this.#bindShortcut();
+    this.#bindFrustration();
     this.#render();
   }
 
@@ -102,6 +112,10 @@ export function nubClass(): CustomElementConstructor {
     }
     this.#detachConnectivity?.();
     this.#detachConnectivity = undefined;
+    this.#frustration?.detach();
+    this.#frustration = undefined;
+    this.#picker?.cancel();
+    this.#picker = undefined;
     this.#client?.destroy();
     // Deliberately not cleared: the queue is durable, so a remounted element
     // rebuilds a client over the same storage and picks up whatever never
@@ -113,6 +127,7 @@ export function nubClass(): CustomElementConstructor {
     if (this.#root === undefined) return;
     this.#configure();
     this.#bindShortcut();
+    this.#bindFrustration();
     this.#render();
   }
 
@@ -196,7 +211,7 @@ export function nubClass(): CustomElementConstructor {
    */
   async #send(): Promise<void> {
     const client = this.#ensureClient();
-    const { draft, kind, custom } = this.#machine.context;
+    const { draft, kind, custom, element } = this.#machine.context;
     if (client === undefined) return;
 
     // "Try again" is the same button. Without this the machine refuses the
@@ -211,18 +226,118 @@ export function nubClass(): CustomElementConstructor {
     const id = ulid();
     if (!this.#machine.send({ type: 'submit', id })) return;
 
+    const snapshot = this.#frustration?.tracker.snapshot();
     const outcome = await client.submit({
       id,
       draft,
       kind,
-      source: 'nub',
+      // The picker is a different route into the same flow, and ranking reads
+      // `source` — conflating the two would lose that.
+      source: element === undefined ? 'nub' : 'picker',
       ...(custom !== undefined && { context: custom }),
+      ...(element !== undefined && { element }),
+      ...(snapshot !== undefined && snapshot.score > 0 && { frustration: snapshot }),
     });
 
     if (outcome.status === 'accepted') this.#machine.send({ type: 'accepted' });
     else if (outcome.status === 'queued') {
       this.#machine.send({ type: 'enqueued', queueDepth: outcome.queueDepth });
     } else this.#machine.send({ type: 'failed', error: outcome.error });
+  }
+
+  /**
+   * Start the element picker.
+   *
+   * The panel collapses first — `picking` is a detour, not a restart, and the
+   * draft survives it (`PanelMachine`, Opinion 3). Without collapsing, the
+   * panel would be covering the thing the user is trying to point at.
+   */
+  async pick(): Promise<void> {
+    if (!this.#machine.send({ type: 'pick' })) return;
+
+    // Loaded on demand. The picker is ~5KB that most sessions never need, and
+    // core + nub have a 15KB budget that CI enforces — adding it statically
+    // put the bundle 2KB over, which is precisely what "panel and snapshot
+    // machinery lazy-loaded" in the README was always describing.
+    const { startPicking } = await import('./picker.ts');
+
+    // Cancelled while the module was in flight.
+    if (this.#machine.state !== 'picking') return;
+
+    // The host page's accent, so the highlight belongs to the same widget the
+    // user just opened rather than arriving in an unrelated colour.
+    const accent = getComputedStyle(this).getPropertyValue('--quorum-accent').trim();
+
+    this.#picker = startPicking({
+      ...(accent !== '' && { accent }),
+      onPick: (_element, described) => {
+        this.#picker = undefined;
+        this.#machine.send({ type: 'picked', element: described });
+      },
+      onCancel: () => {
+        this.#picker = undefined;
+        this.#machine.send({ type: 'pickCancelled' });
+      },
+    });
+  }
+
+  /**
+   * Attach or detach passive detection to match the `frustration` attribute.
+   *
+   * `off` must actually stop listening rather than merely stop reporting: a
+   * customer who turned this off should not be paying for a MutationObserver
+   * on every click.
+   */
+  #bindFrustration(): void {
+    const mode = this.#config?.frustration ?? 'off';
+
+    if (mode === 'off') {
+      this.#frustration?.detach();
+      this.#frustration = undefined;
+      return;
+    }
+    if (this.#frustration !== undefined || this.#loadingFrustration) return;
+    this.#loadingFrustration = true;
+
+    // Also on demand, and also for the budget. Detection is on by default, so
+    // this does load on most pages — but after first paint rather than in the
+    // critical script, which is the part that matters to a host deciding
+    // whether to keep the tag.
+    void import('./frustration-dom.ts').then(({ listenForFrustration }) => {
+      this.#loadingFrustration = false;
+      // Detached, or switched off, while the module was in flight.
+      if (this.#config?.frustration === undefined || this.#config.frustration === 'off') return;
+      if (this.#root === undefined) return;
+
+      const listener = listenForFrustration();
+      this.#frustration = listener;
+      if (this.#config.frustration !== 'prompt') return;
+
+      // ADR-0010: never interrupt. This polls rather than reacting to a click,
+      // so the nudge never lands in the same instant as the frustrating
+      // action, and it fires at most once for the life of the element.
+      const timer = setInterval(() => {
+        if (this.#prompted || this.#machine.state !== 'idle') return;
+        if (listener.tracker.shouldPrompt() !== true) return;
+
+        this.#prompted = true;
+        // An event, not a modal. The host decides what — if anything — to
+        // show, because only they know what else is on screen.
+        this.dispatchEvent(
+          new CustomEvent('quorum:frustrated', {
+            detail: listener.tracker.snapshot(),
+            bubbles: true,
+            composed: true,
+          }),
+        );
+      }, 2000);
+
+      const stop = listener.detach.bind(listener);
+      listener.detach = (): void => {
+        clearInterval(timer);
+        stop();
+      };
+    });
   }
 
   #configure(): void {
@@ -398,6 +513,18 @@ export function nubClass(): CustomElementConstructor {
 
       const actions = document.createElement('div');
       actions.className = 'actions';
+
+      if (this.#config?.picker === true) {
+        const point = document.createElement('button');
+        point.className = 'secondary';
+        point.setAttribute('part', 'picker');
+        point.type = 'button';
+        point.textContent =
+          this.#machine.context.element === undefined ? 'Point at it' : 'Element attached';
+        point.disabled = this.#machine.context.element !== undefined;
+        point.addEventListener('click', () => void this.pick());
+        actions.append(point);
+      }
 
       const cancel = document.createElement('button');
       cancel.className = 'secondary';

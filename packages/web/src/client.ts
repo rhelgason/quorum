@@ -39,6 +39,7 @@ import type {
   CaptureEvent,
   ContextBlock,
   ElementBlock,
+  FrustrationBlock,
   SubmissionKind,
   SubmissionSource,
   UserBlock,
@@ -92,6 +93,14 @@ export interface SubmitInput {
   /** Per-submission context from `open({ context })`. */
   context?: Record<string, unknown>;
   element?: ElementBlock;
+  /**
+   * Passive behavioural signals at the moment of submission.
+   *
+   * A ranking input, not diagnostics: the same complaint from someone who has
+   * been fighting the page for two minutes is stronger evidence than one from
+   * someone browsing calmly.
+   */
+  frustration?: FrustrationBlock;
 }
 
 /**
@@ -202,6 +211,7 @@ export class QuorumClient {
       ...(this.user !== undefined && { user: this.user }),
       context: this.#context(input.context),
       ...(input.element !== undefined && { element: input.element }),
+      ...(input.frustration !== undefined && { frustration: input.frustration }),
       // Shipped even when nothing matched, so an audit can see the policy that
       // ran rather than infer it from an absence (ADR-0007).
       ...(redacted !== undefined && {

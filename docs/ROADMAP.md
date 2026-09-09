@@ -124,7 +124,8 @@ form can't.
       transport had been tested and unused since week one; the element now
       drives them, with `quorum:submitrequest` cancelable as the escape hatch
       for a host that wants its own backend
-- [ ] DOM snapshot + console ring buffer + network log
+- [ ] DOM snapshot + console ring buffer + network log — needs presigned
+      capture upload in the service, which does not exist yet
 - [x] Redaction on the client, before the event is persisted anywhere. Core's
       rule set, not a copy
 - [ ] `data-quorum-redact` opt-out attribute
@@ -132,12 +133,23 @@ form can't.
 
 ## v0.3 — Sharper signal
 
-- [ ] Element picker (selector, bbox, computed styles, React component name)
+- [x] **Element picker** (selector, bbox, computed styles, React component
+      name). Selector durability is the hard part: generated identifiers —
+      `css-1x2y3z`, `:r7:`, `Button_root__a1b2c` — are rejected, because a
+      selector built on one is specific and wrong. Verified in a browser by
+      the only property that matters: the selector resolves back to the
+      element it came from
 - [ ] Text-selection annotation
-- [ ] Frustration score: dead clicks, rage clicks, nav thrash, reload mashing
-- [ ] Non-modal nudge at threshold, once per session, dismissible
-- [ ] Frustration intensity as a ranking input — behavioral signal beats
-      inferred sentiment
+- [x] **Frustration score**: dead clicks, rage clicks, nav thrash, reload
+      mashing, escape mashing, scroll thrash, repeated form errors, console
+      error spikes. Saturating, so one frantic moment cannot dominate
+- [x] Non-modal nudge at threshold, once per session — a `quorum:frustrated`
+      event rather than a modal, because only the host knows what else is on
+      screen ([ADR-0010](adr/0010-never-interrupt-the-frustrated-user.md))
+- [x] Frustration intensity as a ranking input — attached to the submission as
+      the protocol's `FrustrationBlock`
+- [x] Both loaded via `import()`, because adding them statically put core + nub
+      2KB over the 15KB budget and CI refused it
 - [ ] Regression detection: clusters on one screen *and* one version
 
 ## v0.4 — Clustering quality

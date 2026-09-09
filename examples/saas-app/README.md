@@ -32,7 +32,16 @@ Product backlog       http://localhost:4173/backlog
 4. **Submit the same thing twice.** The second one is a `duplicate` in the
    ingest response and changes no score. That is what the client-generated
    ULID is for.
-5. **Expand a backlog row.** Every score decomposes into unique users, weighted
+5. **Point at something.** Open the panel and hit *Point at it*, then hover
+   and click any element. The submission carries a selector that resolves back
+   to that element, its bounding box, and the computed properties that explain
+   why it might be broken — `pointer-events`, `opacity`, `display`. Escape
+   cancels and your draft survives.
+6. **Click a dead button four times.** Frustration detection is on by default
+   and silent; the score rides along with whatever you submit next. It will not
+   interrupt you, which is deliberate
+   ([ADR-0010](../../docs/adr/0010-never-interrupt-the-frustrated-user.md)).
+7. **Expand a backlog row.** Every score decomposes into unique users, weighted
    demand, mean account weight, and growth — down to the verbatim quotes. A
    ranked list you cannot interrogate is one nobody believes
    ([ADR-0012](../../docs/adr/0012-prioritization-is-the-product.md)).
@@ -82,10 +91,10 @@ squashing the timeline would invent a spike that is not in the data.
 
 ## What is not in this example
 
-The nub renders, sends, queues, retries, and reports honestly. It does **not**
-yet do element picking, DOM capture, console or network buffering, or
-frustration detection — those are v0.2/v0.3 and attach to the `captureRef`
-field the client currently leaves empty.
+The nub renders, sends, queues, retries, picks elements, detects frustration,
+and reports honestly. It does **not** yet do DOM capture or console and network
+buffering — those attach to the `captureRef` field the client currently leaves
+empty, and they need presigned upload in the service, which does not exist.
 
 The backlog page is read-only. Merge and split review, which
 [`@quorum/aggregate`](../../packages/aggregate) already computes proposals for,

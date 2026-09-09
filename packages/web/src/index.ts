@@ -16,6 +16,37 @@ export type { QuorumNubElement } from './nub.ts';
 export { QuorumClient, SDK_VERSION } from './client.ts';
 export type { QuorumClientOptions, SubmitInput, SubmitOutcome } from './client.ts';
 
+export {
+  countBursts,
+  DEFAULT_WEIGHTS,
+  detectSignals,
+  FrustrationTracker,
+  PROMPT_THRESHOLD,
+  scoreFrustration,
+} from './frustration.ts';
+export type {
+  FrustrationEvent,
+  FrustrationOptions,
+  FrustrationSnapshot,
+  SignalCounts,
+} from './frustration.ts';
+
+export { listenForFrustration } from './frustration-dom.ts';
+export type { FrustrationListener, FrustrationListenerOptions } from './frustration-dom.ts';
+
+export { CAPTURED_PROPERTIES, describeElement, nodeFrom, reactComponentName, startPicking } from './picker.ts';
+export type { DescribeOptions, PickerHandle, PickerOptions } from './picker.ts';
+
+export {
+  DEFAULT_TEST_ID_ATTRIBUTES,
+  escapeIdentifier,
+  looksGenerated,
+  segmentFor,
+  selectorFor,
+  stableClasses,
+} from './selector.ts';
+export type { SelectorNode, SelectorOptions } from './selector.ts';
+
 export { anonIdFor, createWebQueueStorage, webStorage } from './storage.ts';
 export type { WebStorageLike } from './storage.ts';
 
