@@ -25,7 +25,7 @@ import { Quorum } from '../../packages/node/src/client.ts';
 import { parseCsvRecords } from '../../packages/node/src/csv.ts';
 import { DEFAULT_ONLINE_THRESHOLD } from '../../packages/node/src/issues.ts';
 import type { Issue } from '../../packages/node/src/issues.ts';
-import { hbar, text, THEMES, wrap, type Theme } from './chart.ts';
+import { hbar, onFill, text, THEMES, wrap, type Theme } from './chart.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../..');
@@ -306,6 +306,101 @@ function weightingChart(theme: Theme, moves: Move[]): string {
 }
 
 // ---------------------------------------------------------------------------
+// Figure 4 — the pipeline, with real numbers on it
+// ---------------------------------------------------------------------------
+
+/**
+ * The funnel from inbound channels to a decision.
+ *
+ * A diagram rather than a chart: the quantities matter less than the shape,
+ * and the shape *is* the product claim — four channels, one canonical store,
+ * two clustering tiers, a ranked answer with evidence. Every number is read
+ * off the same run that prints the report, so the picture cannot drift from
+ * the text beside it.
+ */
+function pipelineChart(theme: Theme): string {
+  const width = 760;
+  const height = 340;
+  const body: string[] = [];
+
+  const sources = [...new Map<string, number>(
+    records.reduce<[string, number][]>((acc, r) => {
+      const key = r['source'] as string;
+      const found = acc.find(([name]) => name === key);
+      if (found === undefined) acc.push([key, 1]);
+      else found[1]++;
+      return acc;
+    }, []),
+  )].sort((a, b) => b[1] - a[1]);
+
+  const online = quorum.index?.clusterCount ?? 0;
+  const top10Submissions = issues.slice(0, 10).reduce((sum, i) => sum + i.submissionCount, 0);
+
+  // -- inbound channels, left column ---------------------------------------
+  const chanX = 20;
+  const chanW = 150;
+  let y = 84;
+  body.push(text(chanX, y - 14, 'CHANNELS', theme, { size: 9.5, weight: 700, fill: theme.muted }));
+  for (const [name, count] of sources) {
+    body.push(`<rect x="${String(chanX)}" y="${String(y)}" width="${String(chanW)}" height="30" rx="6" fill="none" stroke="${theme.axis}" stroke-width="1"/>`);
+    body.push(text(chanX + 12, y + 19, name, theme, { size: 11.5, fill: theme.secondary }));
+    body.push(text(chanX + chanW - 12, y + 19, String(count), theme, { anchor: 'end', size: 11.5, mono: true, fill: theme.primary }));
+    y += 38;
+  }
+
+  // -- the stages, as a funnel ---------------------------------------------
+  const stages: [string, string, number][] = [
+    ['428', 'submissions stored', 428],
+    [String(online), 'clusters assigned on write', online],
+    [String(issues.length), 'issues after consolidation', issues.length],
+    ['10', 'rows a person reads', 10],
+  ];
+
+  const stageX = 236;
+  const stageW = 300;
+  const maxCount = 428;
+  let sy = 84;
+
+  stages.forEach((stage, i) => {
+    const [value, label, count] = stage;
+    // Width carries the quantity; the label carries the meaning.
+    const w = Math.max(120, (count / maxCount) * stageW);
+    const shade = theme.ramp[Math.min(theme.ramp.length - 1, 2 + i)] as string;
+
+    body.push(`<rect x="${String(stageX)}" y="${String(sy)}" width="${String(w)}" height="42" rx="7" fill="${shade}"/>`);
+    body.push(text(stageX + 14, sy + 27, value, theme, { size: 17, weight: 700, fill: onFill(shade) }));
+    body.push(text(stageX + w + 12, sy + 27, label, theme, { size: 11.5, fill: theme.secondary }));
+
+    if (i < stages.length - 1) {
+      const cx = stageX + 22;
+      body.push(`<path d="M${String(cx)} ${String(sy + 42)} V${String(sy + 56)}" stroke="${theme.axis}" stroke-width="2"/>`);
+      body.push(`<path d="M${String(cx - 4)} ${String(sy + 52)} L${String(cx)} ${String(sy + 58)} L${String(cx + 4)} ${String(sy + 52)}" fill="${theme.axis}"/>`);
+    }
+    sy += 62;
+  });
+
+  // Channels feed the first stage.
+  body.push(`<path d="M${String(chanX + chanW + 8)} 160 H${String(stageX - 10)}" stroke="${theme.axis}" stroke-width="2"/>`);
+  body.push(`<path d="M${String(stageX - 16)} 156 L${String(stageX - 8)} 160 L${String(stageX - 16)} 164" fill="${theme.axis}"/>`);
+
+  body.push(
+    text(20, height - 18, `one canonical store · ${String(top10Submissions)} of 428 submissions sit behind the top 10 · every row drills to verbatim quotes`, theme, {
+      size: 11,
+      fill: theme.muted,
+    }),
+  );
+
+  return wrap(
+    width,
+    height,
+    theme,
+    'Four channels in, one ranked answer out',
+    'Widget, mobile shake, support inbox and backend exceptions cluster against each other.',
+    body.join('\n'),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Write
 // ---------------------------------------------------------------------------
 
@@ -318,6 +413,7 @@ for (const theme of THEMES) {
   writeFileSync(join(imgDir, `northwind-ranked${suffix}.svg`), rankedChart(theme, top10));
   writeFileSync(join(imgDir, `northwind-regression${suffix}.svg`), regressionChart(theme));
   writeFileSync(join(imgDir, `northwind-weighting${suffix}.svg`), weightingChart(theme, moves));
+  writeFileSync(join(imgDir, `northwind-pipeline${suffix}.svg`), pipelineChart(theme));
 }
 
 // -------------------------------------------------------------------------
@@ -363,7 +459,7 @@ for (const move of moves) {
   );
 }
 
-console.log(`\n  6 figures written to docs/img/\n`);
+console.log(`\n  8 figures written to docs/img/\n`);
 
 const weight = (mrr: number): string => `$${String(mrr)}/mo → ×${accountWeight(mrr).toFixed(2)}`;
 console.log('  account weight is logarithmic:');

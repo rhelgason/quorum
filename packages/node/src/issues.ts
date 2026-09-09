@@ -67,6 +67,13 @@ import type { Submission, SubmissionKind, SubmissionSource } from './submission.
  * doubles precision, and scores higher on F1 on both — it is better on every
  * axis measured, not a trade.
  *
+ * The online threshold was then swept the same way and **kept**
+ * ([ADR-0025](../../../docs/adr/0025-online-threshold-clears-the-guard.md)): at
+ * 0.25 it has the best rank agreement *and* the smallest largest-cluster of any
+ * setting tried, so it is not buying its score by conflating. Above 0.20 it
+ * barely matters — the offline pass dominates the final grouping, which is why
+ * getting its threshold wrong was so much more damaging.
+ *
  * Still not tuned values in any strong sense: both corpora are synthetic, and
  * a threshold that has to be re-derived when the corpus grows is a sign the
  * mechanism wants a size-relative criterion rather than a constant. Sweep them

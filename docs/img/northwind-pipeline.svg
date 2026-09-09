@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="340" viewBox="0 0 760 340" role="img" aria-label="Four channels in, one ranked answer out. Widget, mobile shake, support inbox and backend exceptions cluster against each other.">
+<rect width="760" height="340" fill="#fcfcfb"/>
+<text x="20" y="28" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#0b0b0b" >Four channels in, one ranked answer out</text>
+<text x="20" y="47" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#898781" >Widget, mobile shake, support inbox and backend exceptions cluster against each other.</text>
+<text x="20" y="70" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="9.5" font-weight="700" text-anchor="start" fill="#898781" >CHANNELS</text>
+<rect x="20" y="84" width="150" height="30" rx="6" fill="none" stroke="#c3c2b7" stroke-width="1"/>
+<text x="32" y="103" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >support_inbox</text>
+<text x="158" y="103" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="end" fill="#0b0b0b" >280</text>
+<rect x="20" y="122" width="150" height="30" rx="6" fill="none" stroke="#c3c2b7" stroke-width="1"/>
+<text x="32" y="141" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >nub</text>
+<text x="158" y="141" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="end" fill="#0b0b0b" >114</text>
+<rect x="20" y="160" width="150" height="30" rx="6" fill="none" stroke="#c3c2b7" stroke-width="1"/>
+<text x="32" y="179" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >shake</text>
+<text x="158" y="179" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="end" fill="#0b0b0b" >19</text>
+<rect x="20" y="198" width="150" height="30" rx="6" fill="none" stroke="#c3c2b7" stroke-width="1"/>
+<text x="32" y="217" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >api</text>
+<text x="158" y="217" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="end" fill="#0b0b0b" >15</text>
+<rect x="236" y="84" width="300" height="42" rx="7" fill="#3987e5"/>
+<text x="250" y="111" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="17" font-weight="700" text-anchor="start" fill="#0b0b0b" >428</text>
+<text x="548" y="111" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >submissions stored</text>
+<path d="M258 126 V140" stroke="#c3c2b7" stroke-width="2"/>
+<path d="M254 136 L258 142 L262 136" fill="#c3c2b7"/>
+<rect x="236" y="146" width="120" height="42" rx="7" fill="#2a78d6"/>
+<text x="250" y="173" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="17" font-weight="700" text-anchor="start" fill="#0b0b0b" >102</text>
+<text x="368" y="173" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >clusters assigned on write</text>
+<path d="M258 188 V202" stroke="#c3c2b7" stroke-width="2"/>
+<path d="M254 198 L258 204 L262 198" fill="#c3c2b7"/>
+<rect x="236" y="208" width="120" height="42" rx="7" fill="#256abf"/>
+<text x="250" y="235" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="17" font-weight="700" text-anchor="start" fill="#ffffff" >59</text>
+<text x="368" y="235" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >issues after consolidation</text>
+<path d="M258 250 V264" stroke="#c3c2b7" stroke-width="2"/>
+<path d="M254 260 L258 266 L262 260" fill="#c3c2b7"/>
+<rect x="236" y="270" width="120" height="42" rx="7" fill="#1c5cab"/>
+<text x="250" y="297" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="17" font-weight="700" text-anchor="start" fill="#ffffff" >10</text>
+<text x="368" y="297" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >rows a person reads</text>
+<path d="M178 160 H226" stroke="#c3c2b7" stroke-width="2"/>
+<path d="M220 156 L228 160 L220 164" fill="#c3c2b7"/>
+<text x="20" y="322" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >one canonical store · 151 of 428 submissions sit behind the top 10 · every row drills to verbatim quotes</text>
+</svg>

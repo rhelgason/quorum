@@ -2,84 +2,87 @@
 
 # Quorum
 
-**Know what's important. Quorum turns scattered user feedback into a ranked, defensible answer to "what should we build next?"**
+**Know what's important.** Quorum turns scattered user feedback into a ranked,
+defensible answer to *"what should we build next?"*
 
 *enough voices to make a decision legitimate*
 
+[Quickstart](#see-it-work) · [At scale](#at-scale) · [Status](#status) · [Design docs](#design-docs) · [ADRs](docs/adr/)
+
 </div>
 
----
-
-> ### Status: early, and the whole loop now runs
->
-> `npm run app` starts a demo product with the widget in it, the real ingest
-> service behind it, and the ranked backlog it produces — no install, no build
-> step. See [`examples/saas-app`](examples/saas-app/README.md).
->
-> **Working today** (991 tests, zero runtime dependencies):
-> `@quorum/core` — capture protocol, ULID idempotency keys, a durable bounded
-> offline queue, ingest transport with backoff and the full error table, the
-> panel state machine, PII redaction, structured logging.
-> `@quorum/aggregate` — TF-IDF clustering, offline consolidation, split and
-> outlier proposals, SimHash/LSH blocking, explainable ranking,
-> provider-agnostic LLM and embedding layers.
-> `@quorum/node` — support-inbox/CSV import, exception capture, protocol
-> ingest, and the read API that turns them into a ranked list with evidence.
-> `@quorum/api` — that API over `node:http`, with a durable append-only store.
-> `@quorum/web` — `<quorum-nub>` wired end to end: `identify()`, route and
-> version tagging, client-side redaction, the offline queue, and the retry
-> path, all verified against the real service over a real socket.
-> `@quorum/eval` — labeled corpus, clustering and rank-agreement metrics.
->
-> **The honest gap:** `nub.ts` has a 20-test browser suite driving an installed
-> Chrome over CDP ([ADR-0022](docs/adr/0022-verify-the-dom-layer-over-cdp.md)).
-> It **cannot run in the environment this was authored in** — Chrome will not
-> launch there — but it has been run elsewhere, and the last run was 17/20:
-> it caught two real defects in the element that 900-odd other tests missed.
-> Those are fixed; the corrected suite has not itself been re-run, so treat
-> 20/20 as expected rather than observed. `npm run test:browser`.
->
-> **Also not Postgres.** The store is an append-only JSONL log and clusters are
-> recomputed on every read.
->
-> **Not built yet:** the framework wrappers, DOM capture, and merge/split
-> review UI.
->
-> Follow [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's shipping and
-> [`docs/adr/`](docs/adr/) for why. Three roadmap assumptions have already been
-> overturned by measurement rather than argument — ADRs 0013, 0014.
+<!--
+  PLACEHOLDER — replace docs/img/placeholder-hero.svg with a GIF or PNG of the
+  same name (or change the src). See docs/img/README.md for the shot list.
+-->
+<p align="center">
+  <img alt="The Quorum widget being used, then the feedback appearing in the ranked backlog" src="docs/img/placeholder-hero.svg" width="820">
+</p>
 
 ---
 
-## What it does
+## The idea in one picture
+
+Four channels in — a web widget, a mobile shake, your support inbox, backend
+exceptions — one canonical store, and a ranked list with the evidence attached.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/northwind-pipeline-dark.svg">
+  <img alt="Pipeline diagram: 280 support inbox, 114 widget, 19 shake and 15 API submissions flow into 428 stored submissions, then 102 clusters assigned on write, 59 issues after consolidation, and 10 rows a person reads." src="docs/img/northwind-pipeline.svg" width="760">
+</picture>
 
 **Not a bug tracker.** Bugs are one input among feature requests, confusion,
-praise, and support tickets — they all feed one ranked answer.
+praise and support tickets — they all feed one ranked answer.
 
-**1. Aggregate and rank.** "Add dark mode," "the app hurts my eyes at night,"
-and "why is everything white" are one line item. Ordered by weighted unique
-users and growth rate, not by whoever upvoted loudest — and every row shows
-*why* it ranks where it does, down to the verbatim quotes.
+1. **Aggregate and rank.** "Add dark mode," "the app hurts my eyes at night"
+   and "why is everything white" are one line item, ordered by weighted unique
+   users and growth rate rather than by whoever upvoted loudest.
+2. **Capture.** A corner nub, a keyboard shortcut, an element picker that says
+   *which component* is broken, rage-shake on mobile, and passive frustration
+   detection — without ever throwing a modal at someone who is already annoyed.
+3. **Close the loop.** Open the Linear/Jira/GitHub issue with the spec, the
+   quotes, the affected user count and the repro attached. *(Planned.)*
 
-**2. Capture.** Structured input with near-zero friction: a corner nub, a
-keyboard shortcut, an element picker that tells you *which component* is
-broken, rage-shake on mobile, plus passive frustration detection that notices
-dead clicks and reload-mashing without ever throwing a modal at someone who's
-already annoyed.
+Capture is not a separate product — it is what makes the ranking trustworthy.
+Route, app version, account weight and frustration intensity are all ranking
+signals a plain feedback form cannot produce.
 
-Capture isn't a separate product — it's what makes the ranking trustworthy.
-Route, app version, account weight, and frustration intensity are all ranking
-signals a plain feedback form can't produce.
-
-**3. Close the loop.** Open the Linear/Jira/GitHub issue with a synthesized
-spec, the verbatim quotes behind it, the affected user count, and repro data
-attached. Then tell the people who asked when it ships.
+---
 
 ## See it work
 
-You don't need to install anything — or even collect any feedback — to see
-value. Point [`@quorum/node`](packages/node/README.md) at a support-inbox
-export and get a ranked list out of feedback you already have:
+No install, no build step, no API key.
+
+```bash
+npm run app     # the demo product, its widget, and the ranked backlog
+```
+
+<!-- PLACEHOLDER — swap docs/img/placeholder-backlog.svg for a real screenshot. -->
+<p align="center">
+  <img alt="The ranked backlog with one row expanded, showing its score components and verbatim quotes" src="docs/img/placeholder-backlog.svg" width="820">
+</p>
+
+A fake B2B product on `:4173` with `<quorum-nub>` in it, the real ingest
+service on `:8787`, and the backlog at `/backlog` — seeded with 428 pieces of
+feedback. Worth trying, in order:
+
+- **Send something about dark mode.** It clusters into the existing dark-mode
+  issue instead of making a new row.
+- **Switch user, top right.** That calls `identify(id, { mrr })`. File the same
+  feedback as a $9,400/mo account and as a free one, and watch the list reorder.
+- **Go offline and submit.** The panel says *saved, we'll send it when you're
+  back online* — because that is what happened. Reconnect and it flushes.
+- **Press "Point at it"** and click any element. The submission carries a
+  selector that resolves back to it, plus the computed styles that explain why
+  it might be broken.
+
+<!-- PLACEHOLDER — swap docs/img/placeholder-picker.svg for a GIF of the picker. -->
+<p align="center">
+  <img alt="The element picker highlighting elements as the pointer moves, then attaching one to a submission" src="docs/img/placeholder-picker.svg" width="820">
+</p>
+
+Prefer a terminal? `npm run demo` imports a support-inbox CSV and prints a
+ranked backlog in about a second. The whole integration is two calls:
 
 ```ts
 const quorum = new Quorum({ projectId: 'acme-web' })
@@ -88,137 +91,53 @@ await quorum.importCsv(csv, { source: 'support_inbox' })
 const issues = await quorum.issues({ now: new Date(), limit: 10 })
 ```
 
-That's the whole integration. Run it against the bundled example export:
+---
 
-```bash
-npm run demo        # no install required
-```
+## At scale
 
-```
-3. Ranked backlog — top 8, as of 2026-09-01
-───────────────────────────────────────────
-
-  1. [ 22.48] dashboard is so slow to load now, it used to be instant
-      10 users, 10 submissions, demand 14.99, avg weight 1.61, growth ×1.50 (6→ from 4)
-      bug ×10 · /dashboard (100% of members)
-      evidence:
-      ▸ "dashboard is so slow to load now, it used to be instant"
-          T-1033 · 2026-08-22 · support_inbox
-        "Dashboard loading slow, timing out on our office wifi"
-          T-1040 · 2026-08-30 · support_inbox
-
-  2. [  7.54] dark mode, dark mode, dark mode. Please.
-      9 users, 11 submissions, demand 7.54, avg weight 1.32, growth n/a (only 0 prior)
-      feature_request ×11 · /dashboard (70% of members)
-      evidence:
-      ▸ "dark mode, dark mode, dark mode. Please."
-          T-1045 · 2026-08-31 · support_inbox
-        "dark mode would be amazing, please add dark mode"
-          01J8Z9QK4T0000000000000001 · 2026-08-31 · nub
-
-  3. [  5.55] Checking in on SAML SSO timing, procurement is waiting on us
-      3 users, 6 submissions, demand 5.55, avg weight 2.82, growth n/a (only 0 prior)
-      feature_request ×6 · /settings/security (100% of members)
-```
-
-Read what those three rows are actually saying:
-
-- **#1 ranks on growth, not volume** — 6 unique users this week against 4 the
-  week before. The second derivative is what a PM wants.
-- **#2 mixes sources.** A widget submission arriving over the capture protocol
-  clustered straight into the same issue as support tickets. That's the point
-  of one canonical-issue store.
-- **#3 reaches the top three on 3 users**, because their average account weight
-  is 2.82. Revenue orders the list without dominating it.
-
-No LLM was involved. Titles are the medoid submission — a real sentence a real
-user wrote — and every number decomposes into inputs you can check.
-
-The demo also prints what the pipeline gets *wrong* on this corpus, because a
-ranked list you can't interrogate is one nobody believes. See
-[`examples/support-inbox`](examples/support-inbox/README.md).
-
-## See the whole loop
-
-```bash
-npm run app         # no install required
-```
-
-A fake B2B product on `:4173` with `<quorum-nub>` in it, the real ingest
-service on `:8787`, and the ranked backlog at `/backlog`. Everything is this
-repo's actual code — the browser loads `packages/web/src/nub.ts` and its real
-imports as ES modules, type-stripped per request, with no bundler anywhere.
-
-Worth trying, in order:
-
-- **Send something about dark mode.** It clusters into the existing dark-mode
-  issue rather than making a new row — a widget submission and a support
-  ticket landing in one canonical issue is the point of one store.
-- **Switch user in the top right.** That calls `identify(id, { mrr })`. File
-  the same feedback as a $9,400/mo account and as a free one and compare where
-  it lands. A few multiples apart, not orders of magnitude, because weighting
-  is logarithmic.
-- **Go offline and submit.** The panel says *saved, we'll send it when you're
-  back online*, because that is what happened. Reconnect and it flushes.
-- **Expand any backlog row** to see the score decompose down to verbatim
-  quotes.
-
-See [`examples/saas-app`](examples/saas-app/README.md).
-
-## At a little more scale
-
-`npm run northwind` runs the pipeline over 428 pieces of feedback from 161
-accounts across 120 days and six releases, and prints what it found.
+`npm run northwind` runs the pipeline over 428 submissions from 161 accounts
+across 120 days and six releases.
 
 ```
-  submissions               428
-  accounts                  161 (89 paying)
-  issues found              59
-  compression               7.3× — 428 pieces of feedback into 59 decisions
-  assign on write           29ms for all 428
-  rank + explain            352ms
+  submissions   428          issues found    59
+  accounts      161          compression     7.3×
+  assign on write 29ms       rank + explain  352ms
 ```
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/northwind-ranked-dark.svg">
-  <img alt="Horizontal bar chart of Northwind's top ten issues by score. The CSV export timeout leads at 26.2 with 24 users, roughly double the next row." src="docs/img/northwind-ranked.svg" width="724">
+  <img alt="Bar chart of the top ten issues by score. A CSV export timeout leads at 26.2 with 24 users, roughly double the next row." src="docs/img/northwind-ranked.svg" width="724">
 </picture>
 
-| # | Issue | Score | Users |
-| --- | --- | --- | --- |
-| 1 | The CSV export on the reports page just spins forever | 26.19 | 24 |
-| 2 | Everything hangs for ages before the charts appear | 14.71 | 18 |
-| 3 | I make a coffee while the home screen loads | 14.18 | 16 |
-| 4 | Why do I have to sign in again every hour? | 12.46 | 15 |
-| 5 | Export to CSV times out on our larger workspaces | 11.96 | 13 |
+No LLM is involved. Titles are the **medoid submission** — a real sentence a
+real user wrote — and every number decomposes into inputs you can check.
 
 ### Revenue weighting, isolated
 
-Same clustering, same recency, same growth — only the account-weight term
+Same clustering, same recency, same growth; only the account-weight term
 changes. Log-scaled, so a $10k/month account counts as roughly three users
-rather than a hundred ([ADR-0015](docs/adr/0015-log-scaled-account-weight.md)):
-revenue orders the list without owning it.
+rather than a hundred — revenue orders the list without owning it
+([ADR-0015](docs/adr/0015-log-scaled-account-weight.md)).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/northwind-weighting-dark.svg">
-  <img alt="Slope chart comparing issue ranks with every account equal against ranks weighted by revenue. Most rows hold position; a performance complaint rises four places, a mobile crash falls three." src="docs/img/northwind-weighting.svg" width="700">
+  <img alt="Slope chart comparing ranks with every account equal against ranks weighted by revenue. Most rows hold position; a performance complaint rises four places." src="docs/img/northwind-weighting.svg" width="700">
 </picture>
 
-The biggest mover rises four places — a performance complaint concentrated in
-paying accounts. Nothing moves ten places, which is the point: this is a
-reweighting, not a different product.
+The biggest mover rises four places. Nothing moves ten, which is the point:
+this is a reweighting, not a different product.
 
 ### A regression, and the release that caused it
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/img/northwind-regression-dark.svg">
-  <img alt="Weekly bar chart of iOS capture crash reports. Zero reports for the first ten weeks, then a sharp cluster beginning exactly at the 4.12.0 release marker." src="docs/img/northwind-regression.svg" width="700">
+  <img alt="Weekly bar chart of iOS capture crash reports. Nothing for ten weeks, then a sharp cluster beginning exactly at the 4.12.0 release marker." src="docs/img/northwind-regression.svg" width="700">
 </picture>
 
-Every report of the iOS capture crash carries a route and an app version
-because `docs/PROTOCOL.md` makes both first-class fields rather than metadata
-soup. That is what lets a row read "12 reports from /mobile/capture, 4.12.0, in
-72 hours" instead of "12 reports".
+Every report carries a route and an app version because
+[PROTOCOL.md](docs/PROTOCOL.md) makes both first-class fields rather than
+metadata soup. That is what lets a row read *"12 reports from /mobile/capture,
+4.12.0, in 72 hours"* instead of *"12 reports"*.
 
 ### And what it gets wrong
 
@@ -233,68 +152,73 @@ side is an advertisement:
 ```
 
 Three sentences about one problem, sharing no content words. TF-IDF cosine
-cannot merge them at any threshold — this is the gap embeddings exist to close
-and the reason they are in v0.1
-([ADR-0019](docs/adr/0019-embedding-quality-bar.md)). Overall: 59 issues
-against 25 true topics.
+cannot merge them at any threshold — that is the gap embeddings exist to close,
+and why they are in v0.1.
 
-> **This corpus is synthetic**, and that bounds what it proves. The generator
-> knows which topic each sentence belongs to; the pipeline does not — but the
-> same person wrote both, so this is evidence the system *runs* at scale, not
-> that it clusters *accurately*. Quality is measured separately against a
-> labeled corpus in [`packages/eval`](packages/eval), and replacing that one
-> with real data is the highest-leverage task on the roadmap.
->
-> It has already earned its keep: running it caught a shipped default that was
-> over-merging badly, and the fix changed a threshold that had stood since the
-> two-tier design was validated
-> ([ADR-0024](docs/adr/0024-consolidation-threshold-retuned.md)). A second
-> corpus found in an afternoon what one corpus had hidden for a week.
+> **That corpus is synthetic**, and it bounds what these figures prove: the
+> system *runs* at this scale, not that it clusters *accurately*. Quality is
+> measured against a separate labeled corpus in [`packages/eval`](packages/eval),
+> and replacing that one with real data is the highest-leverage task on the
+> roadmap. It has still earned its keep — running it caught a shipped default
+> that was over-merging badly
+> ([ADR-0024](docs/adr/0024-consolidation-threshold-retuned.md)).
 
-See [`examples/northwind`](examples/northwind/README.md).
+---
 
-## Why not just use a feedback board
+## Status
 
-The structural openings this is built into:
+Early, and further along than most things at this stage. **1,155 tests, zero
+runtime dependencies.**
+
+| Package | State |
+| --- | --- |
+| `@quorum/core` | ✅ Protocol, ULID keys, durable offline queue, transport with the full error table, panel state machine, PII redaction |
+| `@quorum/aggregate` | ✅ TF-IDF clustering, write-time assignment, offline consolidation, split/outlier proposals, SimHash/LSH, explainable ranking |
+| `@quorum/node` | ✅ CSV/inbox import, exception capture, protocol ingest, ranked read API |
+| `@quorum/api` | ✅ `node:http` ingest + read, durable append-only log, rate limiting. **Not Postgres** |
+| `@quorum/web` | ⚠️ `<quorum-nub>` wired end to end — identify, route/version tagging, redaction, offline queue, element picker, frustration detection. Rendering covered by a browser suite that has been **run twice, by hand** |
+| `@quorum/eval` | ✅ Labeled corpus, clustering + rank-agreement metrics, hybrid embedding sweep |
+| `@quorum/react` | ⛔ Not started |
+
+**The two honest gaps.** No real embedding model has ever been measured, so the
+ranked list recovers 5 of the correct top 10 against a proven ceiling of 10/10
+— the harness is built and waiting for a model. And **nothing here has been
+used by a real person yet.**
+
+**Not built:** framework wrappers, DOM capture, presigned capture upload,
+merge/split review UI, Postgres, the write-back integrations.
+
+Six roadmap assumptions have been overturned by measurement rather than
+argument — [ADRs 0013, 0014, 0018, 0019, 0023, 0024](docs/adr/).
+
+---
+
+## Why not just a feedback board
 
 - **Weighted prioritization, not vote counts.** Raw upvotes are a popularity
-  contest dominated by whoever's loudest. Join feedback to plan tier, MRR, and
-  retention risk and the top items become revenue-weighted.
+  contest. Join feedback to plan tier and MRR and the top items become
+  revenue-weighted.
 - **Every input in one place.** Widget submissions, rage shakes, backend
-  exceptions, and support-inbox text cluster together. Feedback-board products
-  are web-first and treat mobile as an afterthought; crash/bug SDKs own
-  shake-to-report but don't rank anything. Nobody is comfortably in the middle.
-- **Evidence, not vibes.** Every ranked row and every generated summary drills
-  down to the quotes that produced it. A ranked list you can't interrogate is a
-  ranked list nobody believes.
-- **Write-side integrations.** Don't show a list. Open the ticket.
+  exceptions and support text cluster *against each other*. Feedback boards are
+  web-first; crash SDKs own shake-to-report but rank nothing. Nobody sits in
+  the middle.
+- **Evidence, not vibes.** Every ranked row drills to the quotes that produced
+  it. A ranked list you cannot interrogate is one nobody believes.
 - **Bring-your-own-model and self-host.** The clustering and ranking core is
   fully deterministic and the LLM sits at the render edge, so "we can't send
   customer feedback to a third party" stops being a dealbreaker.
-- **Truly headless option.** Batteries-included widget *and* the primitives to
-  build your own on our backend.
 
 ## Target integration
 
 ```html
-<!-- the entire web integration -->
 <script src="https://cdn.quorum.dev/v0/quorum.js" data-project="pk_live_..." defer></script>
 ```
 
-```tsx
-// or, with a design system of your own
-import { useQuorum } from '@quorum/react'
-
-const { open } = useQuorum()
-<MyButton onClick={() => open({ kind: 'bug', context: { orderId } })} />
-```
-
 ```ts
-// weighted prioritization needs this one call
-quorum.identify(user.id, { plan: 'enterprise', mrr: 4000 })
+quorum.identify(user.id, { plan: 'enterprise', mrr: 4000 })   // makes ranking revenue-weighted
 ```
 
-Theming is CSS custom properties, not a config object:
+Theming is CSS custom properties, never a config object:
 
 ```css
 quorum-nub { --quorum-accent: #7c3aed; --quorum-radius: 12px; }
@@ -303,96 +227,77 @@ quorum-nub { --quorum-accent: #7c3aed; --quorum-radius: 12px; }
 ## Repository layout
 
 ```
-docs/            architecture, data model, protocol, privacy, ADRs
 packages/
-  core/          @quorum/core      — protocol, ULID, offline queue, transport, redaction, logging
-  aggregate/     @quorum/aggregate — clustering, ranking, LLM provider. Zero deps.
-  node/          @quorum/node      — import, exception capture, protocol ingest, ranked read API
-  eval/          @quorum/eval      — metrics, labeled corpus, baselines, scoring CLI
-  web/           @quorum/web       — <quorum-nub> element + browser client. Rendering unverified here.
-  react/         @quorum/react     — hooks + wrapper (planned)
-services/
-  api/           @quorum/api       — node:http ingest + ranked read API, durable append-only store
-tools/           dev-only, dependency-free: CDP browser driver, TS-stripping dev server, size gate
+  core/        protocol, ULID, offline queue, transport, redaction, logging
+  aggregate/   clustering, write-time assignment, ranking, embedders. Zero deps.
+  node/        import, exception capture, protocol ingest, ranked read API
+  web/         <quorum-nub> + browser client, element picker, frustration
+  eval/        labeled corpus, metrics, baselines, embedding sweep
+services/api/  node:http ingest + read, append-only store, rate limiting
+tools/         dev-only: CDP browser driver, TS-stripping dev server, size gate
 examples/
-  support-inbox/ runnable demo — CSV in, ranked backlog out
-  saas-app/      the whole loop — widget → ingest → ranked dashboard
-  northwind/     428 synthetic submissions — the pipeline at scale, and the README's figures
+  support-inbox/  CSV in, ranked backlog out — a 30-second read
+  saas-app/       the whole loop: widget → ingest → dashboard
+  northwind/      428 submissions — the pipeline at scale, and these figures
 ```
 
-Tests run on Node's built-in runner with zero dependencies:
-
 ```bash
-npm test            # 991 tests, no install required
-npm run app         # the demo product + ingest + ranked backlog
-npm run demo        # import an example support inbox, print a ranked backlog
-npm run serve       # ingest + read API on http://localhost:8787
-npm run eval        # clustering baselines + rank agreement against the corpus
-npm run northwind   # the pipeline over 428 submissions; writes the README's figures
-npm run size        # the 15KB budget — 13.0KB today, as an upper bound
-npm run test:browser # the DOM suite; needs a Chromium-family browser
+npm test              # 1,155 tests, no install required
+npm run app           # the demo product + ingest + ranked backlog
+npm run demo          # import a support inbox, print a ranked backlog
+npm run northwind     # the pipeline at scale; regenerates the figures above
+npm run eval          # clustering baselines + rank agreement
+npm run size          # the 15KB budget — 13.0KB today, as an upper bound
+npm run test:browser  # the DOM suite; needs a Chromium-family browser
 ```
 
 ## Design docs
 
 | Doc | What's in it |
 | --- | --- |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System shape, the five integration layers, entrypoints, aggregation pipeline |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System shape, integration layers, the aggregation pipeline |
 | [DATA-MODEL.md](docs/DATA-MODEL.md) | Canonical-issue store, incremental centroids, ranking, render cache |
 | [PROTOCOL.md](docs/PROTOCOL.md) | The capture envelope — the contract that outlives the packages |
-| [API.md](docs/API.md) | Target public surface for every layer |
 | [PRIVACY.md](docs/PRIVACY.md) | Redaction defaults, enterprise posture, non-goals |
 | [ROADMAP.md](docs/ROADMAP.md) | Sequencing, and what's deliberately deferred |
-| [adr/](docs/adr/) | Decision records — what we chose, what we gave up, what would change our mind |
+| [TESTING.md](docs/TESTING.md) | How a repo with no dependencies tests a browser widget |
+| [adr/](docs/adr/) | 25 decision records — what we chose, and what would change our mind |
 
-The decisions that shape everything else:
+The ones that shape everything else:
 
 - [Prioritization is the product](docs/adr/0012-prioritization-is-the-product.md) — the first session ends with a ranked list, not a feed
-- [Ship the UI, not just the backend](docs/adr/0003-ship-the-ui-not-just-the-backend.md) — capture quality *is* ranking quality
-- [Web Components + shadow DOM](docs/adr/0002-web-components-with-shadow-dom.md) — one UI, N thin adapters
 - [Deterministic core, LLM at the render edge](docs/adr/0005-deterministic-core-llm-at-render-edge.md) — reproducible, auditable, self-hostable
 - [Redact by default](docs/adr/0007-redact-by-default.md) — a pipeline that's safe only when configured correctly is unsafe
-- [No public roadmap](docs/adr/0011-no-public-roadmap.md) — a voting board turns weighted ranking back into a popularity contest
-- [Rank agreement is the eval target](docs/adr/0014-rank-agreement-is-the-eval-target.md) — tuning on ARI picks a measurably worse ranked list
-- [Account weight is logarithmic](docs/adr/0015-log-scaled-account-weight.md) — linear MRR turns the roadmap into "what the whale wants"
-- [The LLM is config, not code](docs/adr/0016-llm-is-config-not-code.md) — free by default, no model names in the repo
-- [Identity is never guessed](docs/adr/0020-identity-is-never-guessed.md) — a random id per anonymous record silently turns unique-user ranking into vote counting
-- [Verify the DOM layer over CDP](docs/adr/0022-verify-the-dom-layer-over-cdp.md) — no registry access, but a browser is already installed and Node ships a WebSocket
+- [Rank agreement is the eval target](docs/adr/0014-rank-agreement-is-the-eval-target.md) — tuning on ARI picks a measurably worse list
+- [...and its conflation guard](docs/adr/0023-rank-agreement-needs-a-conflation-guard.md) — because that metric pays for over-merging
+- [Never interrupt the frustrated user](docs/adr/0010-never-interrupt-the-frustrated-user.md) — the fastest way to turn frustration into uninstallation
+- [Verify the DOM layer over CDP](docs/adr/0022-verify-the-dom-layer-over-cdp.md) — no registry access, but a browser was already installed
 
 ## Constraints we hold ourselves to
 
-- **≤15KB gzipped** for core + nub. **13.0KB today** (`npm run size`), measured
-  as an upper bound — no minification, no tree shaking — so a real bundle is
-  smaller. CI fails on regression.
-- **Free by default.** No API key, no account, no spend. The LLM is off unless
-  configured, and no test ever makes a network call.
+- **≤15KB gzipped** for core + nub — **13.0KB today**, measured as an upper
+  bound, with the picker and frustration detection lazy-loaded. CI fails on
+  regression.
+- **Free by default.** No API key, no account, no spend. No test makes a
+  network call.
 - **No model identifier anywhere in the source tree.** Models are config, so a
-  deprecation is an `.env` edit, not a commit.
-- **Zero runtime dependencies** in `@quorum/core`. Tests use Node's built-in
-  runner; there is no test framework to install either.
-- **No screen-share permission prompt.** Ever. We serialize the DOM.
-- **No interrupting modals** at frustration threshold.
-- **The product works with the LLM turned off.** It degrades to medoid labels.
+  deprecation is an `.env` edit rather than a commit.
+- **Zero runtime dependencies.** Tests use Node's built-in runner; there is no
+  framework to install either.
+- **No screen-share prompt, ever.** We serialize the DOM.
 - **Every ranked row is explainable** down to the verbatim quotes.
 - **Additive-only protocol changes** within a major version.
-
-## Scope discipline
-
-Web components + four framework wrappers + iOS + Android + React Native +
-Flutter + a hosted portal is a staggering surface, each with its own release
-process and OS-version churn. Spreading thin before the capture wedge is proven
-is the most likely way this project dies.
-
-**v1 is web components + React wrapper + native iOS.** Everything else waits
-for someone to ask.
 
 ## Open questions
 
 - npm scope `@quorum/*` availability is **unverified**. Fallbacks: `@quorumhq/*`,
   `@usequorum/*`, `quorum-sdk`.
-- Self-host packaging: Docker Compose only, or a Helm chart too?
 - Ranking depends on `account_weight`, which needs `identify()` with meaningful
-  traits. What's the fallback for a team that won't wire revenue data in?
+  traits. What is the fallback for a team that will not wire revenue data in?
+- Self-host packaging: Docker Compose only, or a Helm chart too?
+
+**v1 is web components + React wrapper + native iOS.** Everything else waits
+for someone to ask — see [scope discipline](docs/ROADMAP.md#the-failure-mode-to-watch).
 
 ## License
 

@@ -108,6 +108,30 @@ export function hbar(x: number, y: number, width: number, height: number, fill: 
   );
 }
 
+/**
+ * Black or white, whichever reads on `fill`.
+ *
+ * A label sitting *inside* a coloured mark is the one place text cannot wear a
+ * text token — it has to contrast with the fill under it. Picking by hand is
+ * how a label ends up at 2.6:1 on the lighter end of a ramp, which is what the
+ * first version of the pipeline figure did on its dark variant.
+ *
+ * WCAG relative luminance, thresholded where the two candidates cross.
+ */
+export function onFill(fill: string): string {
+  const channel = (hex: string): number => {
+    const c = parseInt(hex, 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const l =
+    0.2126 * channel(fill.slice(1, 3)) +
+    0.7152 * channel(fill.slice(3, 5)) +
+    0.0722 * channel(fill.slice(5, 7));
+
+  // Contrast against white is (1.05)/(l+0.05); against black, (l+0.05)/0.05.
+  return (1.05) / (l + 0.05) >= (l + 0.05) / 0.05 ? '#ffffff' : '#0b0b0b';
+}
+
 export function wrap(
   width: number,
   height: number,

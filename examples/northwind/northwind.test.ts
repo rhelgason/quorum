@@ -148,10 +148,16 @@ describe('the committed corpus', () => {
 });
 
 describe('the figures', () => {
-  const svgs = existsSync(imgDir) ? readdirSync(imgDir).filter((f) => f.endsWith('.svg')) : [];
+  const all = existsSync(imgDir) ? readdirSync(imgDir).filter((f) => f.endsWith('.svg')) : [];
+
+  // Only the generated ones. `placeholder-*.svg` are hand-made stand-ins for
+  // screenshots, deliberately single-file — they use neutral tones that read on
+  // either GitHub theme, so a dark variant would be two files to maintain for
+  // no gain.
+  const svgs = all.filter((f) => f.startsWith('northwind-'));
 
   it('exist in both modes', () => {
-    assert.ok(svgs.length >= 6, `only ${String(svgs.length)} figures — run npm run northwind`);
+    assert.ok(svgs.length >= 8, `only ${String(svgs.length)} figures — run npm run northwind`);
     for (const light of svgs.filter((f) => !f.includes('-dark'))) {
       assert.ok(svgs.includes(light.replace('.svg', '-dark.svg')), `${light} has no dark variant`);
     }
@@ -170,7 +176,7 @@ describe('the figures', () => {
   });
 
   it('keep every mark inside the canvas', () => {
-    for (const file of svgs) {
+    for (const file of all) {
       const svg = readFileSync(join(imgDir, file), 'utf8');
       const [, w, h] = /width="(\d+)" height="(\d+)"/.exec(svg) ?? [];
       const width = Number(w);
@@ -198,7 +204,7 @@ describe('the figures', () => {
     // Estimated at 0.58em average advance for the system sans. Approximate,
     // and it still caught a value label running 15px past the right edge and a
     // subtitle running 220px past it — neither visible from reading the code.
-    for (const file of svgs) {
+    for (const file of all) {
       const svg = readFileSync(join(imgDir, file), 'utf8');
       const width = Number((/width="(\d+)"/.exec(svg) ?? [])[1]);
 
@@ -217,8 +223,16 @@ describe('the figures', () => {
     }
   });
 
+  it('include a placeholder for every shot the README leaves open', () => {
+    // Named in docs/img/README.md, referenced by the README. A missing one is a
+    // broken image on the project's front page.
+    for (const shot of ['hero', 'backlog', 'picker', 'nub']) {
+      assert.ok(all.includes(`placeholder-${shot}.svg`), `placeholder-${shot}.svg is missing`);
+    }
+  });
+
   it('escape their text', () => {
-    for (const file of svgs) {
+    for (const file of all) {
       const svg = readFileSync(join(imgDir, file), 'utf8');
       assert.ok(!/&(?!amp;|lt;|gt;|quot;|#)/.test(svg), `${file} has an unescaped ampersand`);
     }

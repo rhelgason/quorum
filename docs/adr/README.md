@@ -32,6 +32,7 @@ Format: Context → Decision → Consequences → Reversal cost.
 | [0022](0022-verify-the-dom-layer-over-cdp.md) | Verify the DOM layer by driving an installed browser over CDP | Accepted · refines 0002 |
 | [0023](0023-rank-agreement-needs-a-conflation-guard.md) | Rank agreement needs a conflation guard | Accepted · refines 0014 |
 | [0024](0024-consolidation-threshold-retuned.md) | The consolidation threshold was bought with conflation | Accepted · amends 0018 |
+| [0025](0025-online-threshold-clears-the-guard.md) | The online threshold clears the guard; the offline pass dominates | Accepted · closes 0024 |
 
 New ADRs: copy 0001's shape, take the next number, don't edit an accepted one —
 supersede it with a new record and update the table.
