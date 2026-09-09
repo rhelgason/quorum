@@ -19,18 +19,29 @@
 
 import { PanelMachine } from '../../core/src/panel.ts';
 import type { PanelState } from '../../core/src/state.ts';
+import type { UserBlock } from '../../core/src/protocol.ts';
+import { ulid } from '../../core/src/ulid.ts';
 import { parseAttributes, type NubConfig } from './attributes.ts';
+import { QuorumClient } from './client.ts';
 import { copyFor } from './copy.ts';
 import { matchesShortcut, isTypingTarget, parseShortcut, type Chord } from './shortcut.ts';
 import { stylesheet } from './styles.ts';
 
-const OBSERVED = ['project', 'kind', 'preset', 'position', 'offset', 'label', 'shortcut', 'picker', 'replay', 'locale', 'frustration'];
+const OBSERVED = ['project', 'endpoint', 'version', 'kind', 'preset', 'position', 'offset', 'label', 'shortcut', 'picker', 'replay', 'locale', 'frustration'];
 
 /** The element's public surface, nameable without a DOM present. */
 export interface QuorumNubElement extends HTMLElement {
   open(options?: { kind?: NubConfig['kind']; prefill?: string; context?: Record<string, unknown> }): void;
   close(): void;
+  /**
+   * Attach the signed-in user. `traits.mrr` is what makes the ranked list
+   * revenue-weighted rather than a head count (ADR-0015).
+   */
+  identify(externalId: string, traits?: UserBlock['traits']): void;
+  /** Forget the identified user. Call on logout. */
+  reset(): void;
   readonly state: PanelState;
+  readonly client: QuorumClient | undefined;
 }
 
 let cached: CustomElementConstructor | undefined;
@@ -50,11 +61,18 @@ export function nubClass(): CustomElementConstructor {
     return OBSERVED;
   }
 
-  #machine = new PanelMachine();
+  // `capture: false` because there is no capture step yet. With the default
+  // the machine would sit in `capturing` waiting for a `captured` event that
+  // nothing sends, and every submission would hang at "Sending…".
+  #machine = new PanelMachine({ capture: false });
   #config: NubConfig | undefined;
   #chord: Chord | undefined;
   #root: ShadowRoot | undefined;
   #onKeydown: ((event: KeyboardEvent) => void) | undefined;
+  #client: QuorumClient | undefined;
+  #detachConnectivity: (() => void) | undefined;
+  /** Queued identify() calls, replayed onto the client once it exists. */
+  #pendingIdentity: { externalId: string; traits?: UserBlock['traits'] } | undefined;
 
   connectedCallback(): void {
     this.#root ??= this.attachShadow({ mode: 'open' });
@@ -82,6 +100,13 @@ export function nubClass(): CustomElementConstructor {
       document.removeEventListener('keydown', this.#onKeydown, true);
       this.#onKeydown = undefined;
     }
+    this.#detachConnectivity?.();
+    this.#detachConnectivity = undefined;
+    this.#client?.destroy();
+    // Deliberately not cleared: the queue is durable, so a remounted element
+    // rebuilds a client over the same storage and picks up whatever never
+    // went out. Dropping the reference is enough.
+    this.#client = undefined;
   }
 
   attributeChangedCallback(): void {
@@ -101,17 +126,122 @@ export function nubClass(): CustomElementConstructor {
     this.#machine.send({ type: 'close', reason: 'programmatic' });
   }
 
+  identify(externalId: string, traits?: UserBlock['traits']): void {
+    // Held rather than dropped when the client does not exist yet. A host that
+    // calls identify() from its own bootstrap will routinely beat the
+    // element's first submission, and losing that call means losing the
+    // account weight on every submission until the next login.
+    this.#pendingIdentity = { externalId, ...(traits !== undefined && { traits }) };
+    this.#ensureClient()?.identify(externalId, traits);
+  }
+
+  reset(): void {
+    this.#pendingIdentity = undefined;
+    this.#client?.reset();
+  }
+
   get state(): PanelState {
     return this.#machine.state;
   }
 
+  get client(): QuorumClient | undefined {
+    return this.#ensureClient();
+  }
+
+  /**
+   * The client, built on first need.
+   *
+   * Lazy because construction reads `localStorage`, and doing that in
+   * `connectedCallback` would mean every page with the tag on it touches
+   * storage whether or not anyone ever opens the panel.
+   */
+  #ensureClient(): QuorumClient | undefined {
+    const config = this.#config;
+    if (config === undefined || config.project === '') return undefined;
+
+    if (this.#client === undefined) {
+      this.#client = new QuorumClient({
+        project: config.project,
+        endpoint: config.endpoint,
+        ...(config.appVersion !== '' && { appVersion: config.appVersion }),
+      });
+      this.#detachConnectivity = this.#client.watchConnectivity();
+      if (this.#pendingIdentity !== undefined) {
+        this.#client.identify(this.#pendingIdentity.externalId, this.#pendingIdentity.traits);
+      }
+    }
+    return this.#client;
+  }
+
+  /**
+   * Run a submission: state machine, send, then state machine again.
+   *
+   * The three outcomes are three different things to tell the user, and
+   * conflating them is the mistake worth avoiding. `queued` is *not* an error
+   * — it means the feedback is durable on the device and will go out later,
+   * which for someone on a train is the system working.
+   */
+  async #send(): Promise<void> {
+    const client = this.#ensureClient();
+    const { draft, kind, custom } = this.#machine.context;
+    if (client === undefined) return;
+
+    // "Try again" is the same button. Without this the machine refuses the
+    // `submit` below — `error` is not a state it accepts one from — and the
+    // retry silently does nothing, which is a worse failure than the original.
+    if (this.#machine.state === 'error') this.#machine.send({ type: 'retry' });
+
+    // The id is generated here, not inside the client, because the machine
+    // reports it in `quorum:submit` before the request goes out — and because
+    // moving to `submitting` first is what stops a double-clicked send button
+    // from queueing the same feedback twice.
+    const id = ulid();
+    if (!this.#machine.send({ type: 'submit', id })) return;
+
+    const outcome = await client.submit({
+      id,
+      draft,
+      kind,
+      source: 'nub',
+      ...(custom !== undefined && { context: custom }),
+    });
+
+    if (outcome.status === 'accepted') this.#machine.send({ type: 'accepted' });
+    else if (outcome.status === 'queued') {
+      this.#machine.send({ type: 'enqueued', queueDepth: outcome.queueDepth });
+    } else this.#machine.send({ type: 'failed', error: outcome.error });
+  }
+
   #configure(): void {
+    const previous = this.#config;
     const { config, warnings } = parseAttributes((name) => this.getAttribute(name));
     this.#config = config;
     // Warn once per change, never throw: a typo in an attribute must not break
     // the page this is embedded in.
     for (const warning of warnings) console.warn(`[quorum-nub] ${warning}`);
     this.#chord = config.shortcut === null ? undefined : parseShortcut(config.shortcut);
+
+    // A client is built around its project, endpoint, and version, so a change
+    // to any of them makes the existing one wrong. Keeping it would send the
+    // next submission to the old endpoint under the old key — and since the
+    // queue is keyed on the project too, the durable events would be stranded
+    // under a name nothing looks up again.
+    const changed =
+      previous !== undefined &&
+      (previous.project !== config.project ||
+        previous.endpoint !== config.endpoint ||
+        previous.appVersion !== config.appVersion);
+
+    if (changed) {
+      // Flush first, best-effort: whatever is already queued still belongs to
+      // the old project and this is the last moment anything will try to send
+      // it there.
+      void this.#client?.flush().catch(() => undefined);
+      this.#detachConnectivity?.();
+      this.#detachConnectivity = undefined;
+      this.#client?.destroy();
+      this.#client = undefined;
+    }
   }
 
   #bindShortcut(): void {
@@ -174,6 +304,21 @@ export function nubClass(): CustomElementConstructor {
     return button;
   }
 
+  /**
+   * Whether the send button should be live.
+   *
+   * `PanelMachine.canSubmit` is false in `error`, correctly — the machine will
+   * not accept a `submit` from there, only a `retry`. But the button in that
+   * state is labelled "Try again", and wiring it straight to `canSubmit` left
+   * it permanently disabled: the retry the copy promises could never be
+   * clicked. So the view adds the one state the machine reaches through a
+   * different event, and `#send()` sends that event first.
+   */
+  #canSend(): boolean {
+    if (this.#machine.canSubmit) return true;
+    return this.#machine.state === 'error' && this.#machine.context.draft.trim() !== '';
+  }
+
   #panel(copy: ReturnType<typeof copyFor>, state: PanelState): HTMLElement {
     const panel = document.createElement('div');
     panel.className = 'panel';
@@ -194,8 +339,13 @@ export function nubClass(): CustomElementConstructor {
       field.placeholder = copy.placeholder;
       field.value = this.#machine.context.draft;
       field.addEventListener('input', () => {
+        // Typing after a failure is an implicit retry. Without this the
+        // machine ignores `edit` in `error` — it only accepts `retry` — so the
+        // user's revisions go nowhere and the eventual retry sends the text
+        // they had already decided was wrong.
+        if (this.#machine.state === 'error') this.#machine.send({ type: 'retry' });
         this.#machine.send({ type: 'edit', draft: field.value });
-        submit.disabled = !this.#machine.canSubmit;
+        submit.disabled = !this.#canSend();
       });
       panel.append(field);
 
@@ -214,15 +364,22 @@ export function nubClass(): CustomElementConstructor {
       submit.setAttribute('part', 'submit');
       submit.type = 'button';
       submit.textContent = copy.submit;
-      submit.disabled = !this.#machine.canSubmit;
+      submit.disabled = !this.#canSend();
       submit.addEventListener('click', () => {
-        this.dispatchEvent(
+        // Cancelable, and that is the whole extension point: a host that wants
+        // to send submissions through its own backend calls
+        // `preventDefault()` and the built-in transport stays out of the way.
+        // Anyone who does nothing gets a working widget, which is the case
+        // that has to be effortless.
+        const proceed = this.dispatchEvent(
           new CustomEvent('quorum:submitrequest', {
             detail: { draft: this.#machine.context.draft, kind: this.#machine.context.kind },
             bubbles: true,
             composed: true,
+            cancelable: true,
           }),
         );
+        if (proceed) void this.#send();
       });
 
       actions.append(cancel, submit);

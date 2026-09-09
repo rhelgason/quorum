@@ -27,6 +27,13 @@ GET  /v0/health
 | `QUORUM_FSYNC` | — | `1` to fsync every append |
 | `QUORUM_ALLOW_ORIGIN` | `*` | Set this before exposing the read API |
 
+The path `/v0/ingest` is pinned in
+[`docs/PROTOCOL.md`](../../docs/PROTOCOL.md#endpoints) and shared with the
+client as `INGEST_PATH` in `@quorum/core`. It was wrong for a week — the
+browser transport posted to `/v0/events` — and nothing caught it, because no
+test had ever put a real client and this server on one socket.
+[`src/roundtrip.test.ts`](src/roundtrip.test.ts) now does.
+
 ## The status codes are the contract
 
 [`docs/PROTOCOL.md`](../../docs/PROTOCOL.md) publishes an error table that every

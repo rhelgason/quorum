@@ -143,3 +143,63 @@ describe('text fields', () => {
     assert.equal(parseAttributes(reader(withProject({ label: '   ' }))).config.label, 'Feedback');
   });
 });
+
+describe('endpoint', () => {
+  test('defaults to same-origin', () => {
+    // The self-host default, and the only one that needs no CORS setup.
+    assert.equal(parseAttributes(reader(withProject({}))).config.endpoint, '');
+  });
+
+  test('accepts an absolute origin and drops the trailing slash', () => {
+    const { config, warnings } = parseAttributes(
+      reader(withProject({ endpoint: 'https://ingest.example.com/' })),
+    );
+    assert.equal(config.endpoint, 'https://ingest.example.com');
+    assert.deepEqual(warnings, []);
+  });
+
+  test('accepts http, for a self-hosted service on a private network', () => {
+    assert.equal(
+      parseAttributes(reader(withProject({ endpoint: 'http://quorum.internal:8787' }))).config.endpoint,
+      'http://quorum.internal:8787',
+    );
+  });
+
+  test('rejects a relative value and warns', () => {
+    // `api/` would resolve against whatever path the page is on, so the same
+    // tag would post somewhere different from /settings than from / — a bug
+    // that presents as an intermittent outage.
+    const { config, warnings } = parseAttributes(reader(withProject({ endpoint: 'api/' })));
+    assert.equal(config.endpoint, '');
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0] as string, /absolute http\(s\) origin/);
+  });
+
+  test('rejects a scheme that is not http(s)', () => {
+    for (const bad of ['ftp://x.example.com', 'javascript:alert(1)', '//example.com']) {
+      const { config } = parseAttributes(reader(withProject({ endpoint: bad })));
+      assert.equal(config.endpoint, '', `${bad} was accepted`);
+    }
+  });
+
+  test('an empty endpoint is same-origin, not a warning', () => {
+    const { config, warnings } = parseAttributes(reader(withProject({ endpoint: '  ' })));
+    assert.equal(config.endpoint, '');
+    assert.deepEqual(warnings, []);
+  });
+});
+
+describe('version', () => {
+  test('is absent by default', () => {
+    assert.equal(parseAttributes(reader(withProject({}))).config.appVersion, '');
+  });
+
+  test('is trimmed and passed through verbatim', () => {
+    // Not parsed or validated: it is an opaque grouping key, and rejecting a
+    // scheme we did not anticipate would drop the structural signal entirely.
+    assert.equal(
+      parseAttributes(reader(withProject({ version: ' 4.12.0-rc.1 ' }))).config.appVersion,
+      '4.12.0-rc.1',
+    );
+  });
+});

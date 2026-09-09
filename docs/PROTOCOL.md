@@ -93,6 +93,29 @@ Source is not cosmetic. `frustration_prompt` submissions have systematically
 different quality than `nub` ones, and a submission from `shake` with no body
 still carries a strong signal. Ranking and clustering both read it.
 
+## Endpoints
+
+The path is part of the contract, not an implementation detail of whichever
+service happens to be serving it.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/v0/ingest` | The envelope, batched. The only write path. |
+| `POST` | `/v0/captures` | Presigned capture upload. **Not implemented.** |
+
+> **This section exists because the two halves disagreed.** The browser
+> transport posted to `/v0/events` and `services/api` served `/v0/ingest`, for
+> a week, with both suites green — the client's tests inject a fake `fetch` and
+> assert on the request body, and the server's tests call the router directly,
+> so nothing ever put the two on one connection. Neither was wrong against its
+> own tests, and neither was wrong against this document, because this document
+> did not say.
+>
+> The path is now `INGEST_PATH` in `@quorum/core`, a row in this table, and
+> covered by `services/api/src/roundtrip.test.ts`, which runs a real client
+> against a real server over a real socket. A path change has to break all
+> three.
+
 ## Capture upload
 
 Captures are large and slow; the envelope is small and must land immediately.

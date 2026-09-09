@@ -29,6 +29,19 @@ export type Position =
 export interface NubConfig {
   /** Public key. Required; without it the element renders nothing. */
   project: string;
+  /**
+   * Ingest origin. Empty means same-origin, which is the self-host default and
+   * the only setting that needs no CORS configuration.
+   */
+  endpoint: string;
+  /**
+   * The host application's version, reported on every submission.
+   *
+   * A structural clustering signal, not diagnostics: "12 reports from
+   * /receipts/scan on 4.12.0 in 72 hours" is a regression alert, and without
+   * this it is just twelve reports.
+   */
+  appVersion: string;
   kind: SubmissionKind;
   preset: Preset;
   position: Position;
@@ -73,6 +86,8 @@ const FRUSTRATION: readonly FrustrationMode[] = ['off', 'detect', 'prompt'];
  *   incident waiting to happen (ADR-0007).
  */
 export const DEFAULTS: Omit<NubConfig, 'project'> = {
+  endpoint: '',
+  appVersion: '',
   kind: 'feature_request',
   preset: 'soft',
   position: 'bottom-right',
@@ -109,6 +124,8 @@ export function parseAttributes(get: AttributeReader): ParsedAttributes {
   return {
     config: {
       project,
+      endpoint: parseEndpoint(get('endpoint'), warnings),
+      appVersion: get('version')?.trim() ?? DEFAULTS.appVersion,
       kind: oneOf('kind', KINDS, DEFAULTS.kind),
       preset: oneOf('preset', PRESETS, DEFAULTS.preset),
       position: oneOf('position', POSITIONS, DEFAULTS.position),
@@ -157,6 +174,26 @@ function parseOffset(raw: string | null, warnings: string[]): number {
   const clamped = Math.min(200, Math.max(0, Math.round(value)));
   if (clamped !== value) warnings.push(`offset="${raw}" clamped to ${String(clamped)}`);
   return clamped;
+}
+
+/**
+ * The ingest origin, with the trailing slash removed.
+ *
+ * Only an absolute `http(s)` origin or empty is accepted. A relative value
+ * like `api/` would resolve against whatever path the page happens to be on,
+ * so the same tag would post to a different URL from `/settings` than from
+ * `/`, and only one of them would work — which is the kind of bug that looks
+ * like an intermittent outage.
+ */
+function parseEndpoint(raw: string | null, warnings: string[]): string {
+  if (raw === null || raw.trim() === '') return DEFAULTS.endpoint;
+  const value = raw.trim().replace(/\/+$/, '');
+
+  if (!/^https?:\/\//i.test(value)) {
+    warnings.push(`endpoint="${raw}" must be an absolute http(s) origin; using same-origin`);
+    return DEFAULTS.endpoint;
+  }
+  return value;
 }
 
 /** `off`, `none`, or empty disables it; anything else is handed to the parser. */

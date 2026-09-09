@@ -13,6 +13,12 @@
 export { defineQuorumNub, nubClass } from './nub.ts';
 export type { QuorumNubElement } from './nub.ts';
 
+export { QuorumClient, SDK_VERSION } from './client.ts';
+export type { QuorumClientOptions, SubmitInput, SubmitOutcome } from './client.ts';
+
+export { anonIdFor, createWebQueueStorage, webStorage } from './storage.ts';
+export type { WebStorageLike } from './storage.ts';
+
 export { DEFAULTS, parseAttributes } from './attributes.ts';
 export type {
   AttributeReader,

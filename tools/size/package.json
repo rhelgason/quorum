@@ -1,0 +1,11 @@
+{
+  "name": "@quorum/size",
+  "version": "0.0.0",
+  "private": true,
+  "description": "An upper bound on the gzipped size of core + nub, measured without a bundler.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "license": "MIT"
+}
