@@ -9,6 +9,8 @@ tests run.
 ```bash
 npm test              # no install required
 npm run test:coverage # enforces line 90 / branch 85 / function 90
+npm run test:browser  # the DOM suite; needs a Chromium-family browser
+npm run size          # the 15KB budget
 npm run typecheck     # needs `npm install`
 npm run build         # needs `npm install`
 npm run eval          # clustering baselines + a ranked backlog
@@ -42,15 +44,55 @@ browser, so nothing is lost by staying out of the emit graph until those change.
 They join the build graph when `services/api` is real and the cross-package
 imports resolve through workspace links against built `dist` output.
 
-`packages/web` is the one place this test setup cannot reach. Its pure modules
-— attribute parsing, presets, shortcut matching, panel copy — are fully tested,
-but `nub.ts` binds to the DOM and **has never been executed**: there is no
-browser runner and no bundler here. It is excluded from the coverage gate like
-`cli.ts`, and unlike `cli.ts` it is big enough that the exclusion is hiding a
-real gap rather than trimming console plumbing. A hand-written DOM shim was
-considered and rejected — a shim that lies gives false confidence, which is
-worse than an honest hole. What it needs is `@web/test-runner` or Playwright,
-plus a bundler for the 15KB size gate.
+### The DOM layer, and the three things that verify it
+
+`packages/web` used to be the one place this setup could not reach. It is now
+covered by three tests that make progressively stronger claims, and it matters
+which is which.
+
+**1. The module graph resolves** — `examples/saas-app/graph.test.ts`. Fetches
+every module a browser would load through the dev server and asserts each one
+resolves, type-strips clean, contains no surviving declarations, and imports no
+Node builtin. Runs anywhere, needs nothing. **It executes none of the code**,
+so it proves delivery, not behaviour.
+
+**2. The write path works** — `services/api/src/roundtrip.test.ts`. A real
+`QuorumClient` against a real `node:http` server over a real socket: identity,
+traits, route tagging, redaction, idempotent replay, and the offline-then-drain
+path. Runs anywhere. **It never touches the DOM.**
+
+This file exists because of a bug it would have caught on day one. The browser
+transport posted to `/v0/events`; the service served `/v0/ingest`. Both suites
+were green for a week, because the client's tests inject a fake `fetch` and the
+server's tests call the router directly, and nothing ever put the two on
+opposite ends of one connection. **The seam between two components is a
+component**, and it needs its own tests.
+
+**3. The element renders** — `packages/web/src/nub.browser.test.ts`. 20 tests
+driving an installed Chromium-family browser over CDP with a dependency-free
+client ([ADR-0022](adr/0022-verify-the-dom-layer-over-cdp.md)): shadow root
+attachment, computed styles, page-level custom properties beating the defaults,
+click and keyboard flows through the browser's real input pipeline, composed
+events reaching `document`, `attributeChangedCallback`, and listener cleanup on
+disconnect.
+
+These skip with a reason when no browser is found, so `npm test` stays green on
+a machine without one. `QUORUM_BROWSER_REQUIRED=1` — which `npm run
+test:browser` sets — turns the skip into a failure, because otherwise a broken
+launch is indistinguishable from a missing browser and the DOM layer quietly
+stops being tested again.
+
+> **They have not run in the authoring environment.** Chrome is installed here
+> and will not start: a macOS Mach bootstrap denial, unrelated to Quorum, that
+> kills it before it prints a DevTools endpoint. So the browser suite is
+> written, wired, and unexecuted, which is exactly the thing this repo does not
+> pretend about. Run it on a normal machine.
+
+`nub.ts` stays excluded from the coverage gate regardless, and not as a dodge:
+it executes in Chrome, not in Node, so Node's coverage instrumentation cannot
+see it run no matter how thorough the browser suite gets. Coverage and browser
+verification measure different things here. The same applies to
+`tools/browser/src/browser.ts`.
 
 CLI entrypoints are excluded from coverage (`**/cli.ts`) and kept as thin
 shells over tested pure functions, so the threshold measures logic rather than

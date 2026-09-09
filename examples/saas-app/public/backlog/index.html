@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Product backlog — Northwind</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <p class="logo"><span class="mark"></span> Northwind</p>
+        <nav class="nav">
+          <a href="/">Dashboard</a>
+          <a href="/reports">Reports</a>
+          <a href="/settings">Settings</a>
+          <a href="/settings/security">Security</a>
+          <p class="sep">Internal</p>
+          <a href="/backlog" aria-current="page">Product backlog</a>
+        </nav>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <span class="crumb" id="crumb">computing…</span>
+          <button class="btn" id="refresh">Refresh</button>
+        </header>
+
+        <main class="content">
+          <h1>What should we build next?</h1>
+          <p class="lede">
+            Every row is a cluster of submissions, ordered by weighted unique users and
+            growth. Expand one to see the score decompose and read the verbatim feedback
+            behind it. No LLM is involved: titles are the medoid submission, a real
+            sentence a real user wrote.
+          </p>
+          <div id="list"><p class="empty">Loading…</p></div>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="/backlog/backlog.js"></script>
+  </body>
+</html>

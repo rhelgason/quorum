@@ -46,6 +46,10 @@ widget required to see value.
       and deduplicates across them. **Not Postgres**, no presigned capture
       upload, no rate limiter, and clusters are still recomputed per read;
       write-time assignment with persisted centroids is the real remaining gap
+- [x] The ingest path pinned in [PROTOCOL.md](PROTOCOL.md#endpoints) and
+      covered by a real client-to-server test. It was wrong for a week — the
+      transport posted to `/v0/events`, the service served `/v0/ingest`, and
+      both suites were green because nothing ever put the two on one socket
 - [x] LSH near-duplicate collapse (SimHash over character shingles) — the
       primitive, with banded blocking. **Built, not yet wired into the
       clustering pre-pass**: making it a default needs an eval sweep, and its
@@ -74,9 +78,12 @@ widget required to see value.
 - [x] **Score explainability** — every ranked row carries its component
       breakdown, a one-line explanation, and the verbatim quotes behind it,
       served by `@quorum/node`'s read API
-- [ ] Ranked dashboard on top of it — the UI, not the data. The endpoints it
-      would call are live: `GET /v0/issues`, `/v0/issues/:id`, and
-      `/v0/issues/:id/submissions`
+- [x] Ranked dashboard on top of it — the UI, not the data, in
+      [`examples/saas-app`](../examples/saas-app/README.md). Every row
+      decomposes into its score components and drills down to verbatim quotes,
+      served by `GET /v0/issues`, `/v0/issues/:id`, and
+      `/v0/issues/:id/submissions`. Read-only: merge and split review, which
+      `@quorum/aggregate` already proposes, still has no UI
 
 Import-first is deliberate. It proves the claim on the customer's own data
 instead of asking them to collect for six months first.
@@ -90,17 +97,28 @@ simplification is gone.
 Every item here exists because it produces a ranking signal a plain feedback
 form can't.
 
-- [~] `@quorum/web` — `<quorum-nub>`, three presets, shadow DOM. Written; the
-      pure layer is tested and the DOM layer has never run. **Needs a browser
-      test runner before it can be called done**, and the ≤15KB budget is
-      unmeasured because there is no bundler yet
-- [~] Entrypoints: nub, keyboard shortcut, programmatic `open()` — written,
-      shortcut matching and attribute parsing tested, wiring unverified
-- [ ] `identify()` and account weighting plumbed end to end — this is what makes
-      ranking revenue-weighted instead of a popularity contest
-- [ ] Route and version tagging on every submission (the structural signal)
+- [~] `@quorum/web` — `<quorum-nub>`, three presets, shadow DOM. A browser
+      test suite now exists and drives an installed Chrome over CDP
+      ([ADR-0022](adr/0022-verify-the-dom-layer-over-cdp.md)), but **it has
+      never been executed here** — Chrome will not launch in the authoring
+      environment. `npm run test:browser` on any normal machine is what
+      closes this
+- [x] The ≤15KB budget, measured: **12.2KB gzipped** for core + nub. An upper
+      bound — nothing is minified or tree shaken — so a real bundle is smaller
+- [~] Entrypoints: nub, keyboard shortcut, programmatic `open()` — written and
+      covered by the browser suite; unverified only in the sense above
+- [x] **`identify()` and account weighting plumbed end to end** — widget →
+      protocol → ingest → `accountWeight` → ranked list, covered by
+      `services/api/src/roundtrip.test.ts` against a real server
+- [x] Route and version tagging on every submission (the structural signal)
+- [x] The write path actually wired — `@quorum/core`'s durable queue and
+      transport had been tested and unused since week one; the element now
+      drives them, with `quorum:submitrequest` cancelable as the escape hatch
+      for a host that wants its own backend
 - [ ] DOM snapshot + console ring buffer + network log
-- [ ] Redaction: mask-by-default, `data-quorum-redact`, pattern scan
+- [x] Redaction on the client, before the event is persisted anywhere. Core's
+      rule set, not a copy
+- [ ] `data-quorum-redact` opt-out attribute
 - [ ] `@quorum/react` wrapper + hooks
 
 ## v0.3 — Sharper signal

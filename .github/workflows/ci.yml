@@ -34,15 +34,39 @@ jobs:
       - run: npm run build
 
   # The 15KB budget is a product requirement, not an optimization — frontend
-  # teams reject widgets on bundle size. This job is expected to fail the
-  # build, not warn. Enabled once @quorum/web produces a bundle.
+  # teams reject widgets on bundle size. This job fails the build rather than
+  # warning.
+  #
+  # It measures an upper bound: types and comments removed, then gzipped, with
+  # no minification or tree shaking. A real bundler can only do better, so a
+  # pass here is a genuine pass. See tools/size.
   size:
     runs-on: ubuntu-latest
-    if: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
-      - run: npm install --no-audit --no-fund
+      # No install: the size tool has no dependencies either.
       - run: npm run size
+
+  # The DOM layer. `ubuntu-latest` ships Chrome, and CHROME_PATH points at it.
+  #
+  # QUORUM_BROWSER_REQUIRED turns a skip into a failure. Without it a browser
+  # that fails to launch looks exactly like a machine that has none, and this
+  # job would go green while testing nothing — which is how the DOM layer went
+  # unverified for a week in the first place.
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Locate Chrome
+        run: |
+          which google-chrome || which chromium-browser || which chromium
+          google-chrome --version || chromium --version
+      - run: npm run test:browser
+        env:
+          QUORUM_BROWSER_REQUIRED: '1'

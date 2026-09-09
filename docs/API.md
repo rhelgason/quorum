@@ -218,19 +218,26 @@ automatically when it ships.
 
 ## Read API (dashboard, or your own UI)
 
-> The HTTP surface below needs `services/api`. The **in-process equivalent is
-> implemented**: `quorum.issues({ now, limit })` returns ranked issues carrying
-> their score components, a one-line explanation, and the verbatim quotes
-> behind each row. The HTTP layer is a serialization of it, not new logic.
+> Four of these are **live** in [`services/api`](../services/api/README.md) and
+> are what [`examples/saas-app`](../examples/saas-app/README.md)'s backlog page
+> reads. The rest are target surface.
 
 ```
-GET  /v0/issues?sort=score&status=open&limit=20
-GET  /v0/issues/:id                  → includes render + quote_refs
-GET  /v0/issues/:id/submissions      → the verbatim evidence
-POST /v0/issues/:id/vote
-POST /v0/issues/:id/subscribe
-GET  /v0/changelog
+POST /v0/ingest                      the capture protocol, batched   ✅ live
+GET  /v0/issues?limit=20             ranked, with score components   ✅ live
+GET  /v0/issues/:id                  one issue                       ✅ live
+GET  /v0/issues/:id/submissions      the verbatim evidence           ✅ live
+GET  /v0/health                                                      ✅ live
+
+GET  /v0/issues?sort=&status=        sort and status filters         — planned
+POST /v0/issues/:id/vote                                             — planned
+POST /v0/issues/:id/subscribe                                        — planned
+GET  /v0/changelog                                                   — planned
 ```
+
+The write path's exact spelling is pinned in
+[PROTOCOL.md](PROTOCOL.md#endpoints), not here, because it is a contract every
+SDK's retry logic is written against rather than a convenience of this service.
 
 Every issue response carries its evidence, including the scoring components
 behind its rank. A customer can build a completely custom prioritization UI on

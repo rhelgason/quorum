@@ -10,9 +10,13 @@
 
 ---
 
-> ### Status: early, partially built
+> ### Status: early, and the whole loop now runs
 >
-> **Working today** (829 tests, zero runtime dependencies):
+> `npm run app` starts a demo product with the widget in it, the real ingest
+> service behind it, and the ranked backlog it produces — no install, no build
+> step. See [`examples/saas-app`](examples/saas-app/README.md).
+>
+> **Working today** (991 tests, zero runtime dependencies):
 > `@quorum/core` — capture protocol, ULID idempotency keys, a durable bounded
 > offline queue, ingest transport with backoff and the full error table, the
 > panel state machine, PII redaction, structured logging.
@@ -21,19 +25,23 @@
 > provider-agnostic LLM and embedding layers.
 > `@quorum/node` — support-inbox/CSV import, exception capture, protocol
 > ingest, and the read API that turns them into a ranked list with evidence.
+> `@quorum/api` — that API over `node:http`, with a durable append-only store.
+> `@quorum/web` — `<quorum-nub>` wired end to end: `identify()`, route and
+> version tagging, client-side redaction, the offline queue, and the retry
+> path, all verified against the real service over a real socket.
 > `@quorum/eval` — labeled corpus, clustering and rank-agreement metrics.
-> `npm run eval` prints a ranked backlog from the corpus with no LLM involved.
 >
-> **Partly built:** `@quorum/web` — the `<quorum-nub>` element is written and
-> its pure layer is tested, but the DOM layer has never run in a browser here.
-> Treat it as a draft; see [its README](packages/web/README.md).
+> **The honest gap:** `nub.ts` has a 20-test browser suite that drives an
+> installed Chrome over CDP ([ADR-0022](docs/adr/0022-verify-the-dom-layer-over-cdp.md)),
+> and **it has never been executed** — Chrome will not launch in the
+> environment this was authored in. Everything short of rendering is verified;
+> rendering is not. `npm run test:browser` on any normal machine closes it.
 >
-> `@quorum/api` — the ingest and read API over `node:http`, with a durable
-> append-only store. Not Postgres, and clusters are still recomputed per read.
+> **Also not Postgres.** The store is an append-only JSONL log and clusters are
+> recomputed on every read.
 >
-> **Not built yet:** the framework wrappers and the dashboard. `@quorum/node` stores in memory and recomputes on
-> read. The web integration snippets below describe the target API, not working
-> software.
+> **Not built yet:** the framework wrappers, DOM capture, the element picker,
+> frustration detection, and merge/split review UI.
 >
 > Follow [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's shipping and
 > [`docs/adr/`](docs/adr/) for why. Three roadmap assumptions have already been
@@ -128,6 +136,33 @@ The demo also prints what the pipeline gets *wrong* on this corpus, because a
 ranked list you can't interrogate is one nobody believes. See
 [`examples/support-inbox`](examples/support-inbox/README.md).
 
+## See the whole loop
+
+```bash
+npm run app         # no install required
+```
+
+A fake B2B product on `:4173` with `<quorum-nub>` in it, the real ingest
+service on `:8787`, and the ranked backlog at `/backlog`. Everything is this
+repo's actual code — the browser loads `packages/web/src/nub.ts` and its real
+imports as ES modules, type-stripped per request, with no bundler anywhere.
+
+Worth trying, in order:
+
+- **Send something about dark mode.** It clusters into the existing dark-mode
+  issue rather than making a new row — a widget submission and a support
+  ticket landing in one canonical issue is the point of one store.
+- **Switch user in the top right.** That calls `identify(id, { mrr })`. File
+  the same feedback as a $9,400/mo account and as a free one and compare where
+  it lands. A few multiples apart, not orders of magnitude, because weighting
+  is logarithmic.
+- **Go offline and submit.** The panel says *saved, we'll send it when you're
+  back online*, because that is what happened. Reconnect and it flushes.
+- **Expand any backlog row** to see the score decompose down to verbatim
+  quotes.
+
+See [`examples/saas-app`](examples/saas-app/README.md).
+
 ## Why not just use a feedback board
 
 The structural openings this is built into:
@@ -184,21 +219,26 @@ packages/
   aggregate/     @quorum/aggregate — clustering, ranking, LLM provider. Zero deps.
   node/          @quorum/node      — import, exception capture, protocol ingest, ranked read API
   eval/          @quorum/eval      — metrics, labeled corpus, baselines, scoring CLI
-  web/           @quorum/web       — <quorum-nub> element. Pure layer tested; DOM layer unverified.
-  react/         @quorum/react  — hooks + wrapper (planned)
+  web/           @quorum/web       — <quorum-nub> element + browser client. Rendering unverified here.
+  react/         @quorum/react     — hooks + wrapper (planned)
 services/
   api/           @quorum/api       — node:http ingest + ranked read API, durable append-only store
+tools/           dev-only, dependency-free: CDP browser driver, TS-stripping dev server, size gate
 examples/
   support-inbox/ runnable demo — CSV in, ranked backlog out
+  saas-app/      the whole loop — widget → ingest → ranked dashboard
 ```
 
 Tests run on Node's built-in runner with zero dependencies:
 
 ```bash
-npm test            # 829 tests, no install required
+npm test            # 991 tests, no install required
+npm run app         # the demo product + ingest + ranked backlog
 npm run demo        # import an example support inbox, print a ranked backlog
 npm run serve       # ingest + read API on http://localhost:8787
 npm run eval        # clustering baselines + rank agreement against the corpus
+npm run size        # the 15KB budget — 12.2KB today, as an upper bound
+npm run test:browser # the DOM suite; needs a Chromium-family browser
 ```
 
 ## Design docs
@@ -225,11 +265,13 @@ The decisions that shape everything else:
 - [Account weight is logarithmic](docs/adr/0015-log-scaled-account-weight.md) — linear MRR turns the roadmap into "what the whale wants"
 - [The LLM is config, not code](docs/adr/0016-llm-is-config-not-code.md) — free by default, no model names in the repo
 - [Identity is never guessed](docs/adr/0020-identity-is-never-guessed.md) — a random id per anonymous record silently turns unique-user ranking into vote counting
+- [Verify the DOM layer over CDP](docs/adr/0022-verify-the-dom-layer-over-cdp.md) — no registry access, but a browser is already installed and Node ships a WebSocket
 
 ## Constraints we hold ourselves to
 
-- **≤15KB gzipped** for core + nub, panel and snapshot machinery lazy-loaded.
-  CI fails on regression.
+- **≤15KB gzipped** for core + nub. **12.2KB today** (`npm run size`), measured
+  as an upper bound — no minification, no tree shaking — so a real bundle is
+  smaller. CI fails on regression.
 - **Free by default.** No API key, no account, no spend. The LLM is off unless
   configured, and no test ever makes a network call.
 - **No model identifier anywhere in the source tree.** Models are config, so a

@@ -1,0 +1,296 @@
+/*
+ * Northwind Analytics — the fake product's own design system.
+ *
+ * Deliberately nothing like the nub's. The widget ships its own shadow DOM and
+ * its own tokens, and the interesting thing to see in this example is that the
+ * two coexist: none of these rules leak in, and none of the nub's leak out.
+ * The one exception is the `quorum-nub { --quorum-accent }` rule at the
+ * bottom, which is the supported way to theme it (ADR-0004).
+ */
+
+:root {
+  --ink: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --brand: #0f766e;
+  --brand-soft: #ccfbf1;
+  --warn: #b45309;
+  --radius: 10px;
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--bg);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+a { color: var(--brand); }
+
+/* -- shell ---------------------------------------------------------------- */
+
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+.sidebar {
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  padding: 20px 14px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 0 0 22px 6px;
+}
+
+.logo .mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--brand), #14b8a6);
+}
+
+.nav { display: flex; flex-direction: column; gap: 2px; }
+
+.nav a {
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.nav a:hover { background: var(--bg); color: var(--ink); }
+.nav a[aria-current="page"] { background: var(--brand-soft); color: #115e59; }
+
+.nav .sep {
+  margin: 14px 10px 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.main { display: flex; flex-direction: column; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.crumb { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+
+.content { padding: 28px; max-width: 1100px; }
+
+h1 { font-size: 20px; margin: 0 0 4px; letter-spacing: -0.01em; }
+h2 { font-size: 15px; margin: 28px 0 10px; }
+.lede { color: var(--muted); margin: 0 0 22px; }
+
+/* -- identity ------------------------------------------------------------- */
+
+.who { display: flex; align-items: center; gap: 10px; }
+
+.who select {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.who .plan {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* -- product surface ------------------------------------------------------ */
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.card .k { color: var(--muted); font-size: 12px; }
+.card .v { font-size: 24px; font-weight: 620; letter-spacing: -0.02em; margin-top: 2px; }
+.card .d { font-size: 12px; color: var(--brand); }
+
+.chart {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 14px;
+}
+
+.bars { display: flex; align-items: flex-end; gap: 8px; height: 140px; margin-top: 12px; }
+.bars div { flex: 1; background: var(--brand-soft); border-radius: 4px 4px 0 0; }
+.bars div:last-child { background: var(--brand); }
+
+table { width: 100%; border-collapse: collapse; background: var(--panel); }
+
+th, td {
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+th { color: var(--muted); font-weight: 550; font-size: 12px; }
+
+.btn {
+  font: inherit;
+  font-weight: 550;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.btn:hover { background: var(--bg); }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+.hint {
+  margin-top: 26px;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+kbd {
+  font-family: var(--mono);
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 1px 5px;
+  background: var(--panel);
+}
+
+/* -- backlog -------------------------------------------------------------- */
+
+.issue {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.issue > summary {
+  display: grid;
+  grid-template-columns: 34px 62px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+.issue > summary::-webkit-details-marker { display: none; }
+.issue > summary:hover { background: var(--bg); }
+
+.rank { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+
+.score {
+  font-family: var(--mono);
+  font-weight: 650;
+  color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+
+.title { font-weight: 550; }
+.why { color: var(--muted); font-size: 12px; margin-top: 3px; font-family: var(--mono); }
+.tags { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+.tag {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.detail { padding: 0 16px 16px 108px; }
+
+.components {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 4px 0 16px;
+}
+
+.components div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.components .k { font-size: 11px; color: var(--muted); }
+.components .v { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+blockquote {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--brand-soft);
+  background: var(--bg);
+  border-radius: 0 8px 8px 0;
+}
+
+blockquote.label { border-left-color: var(--brand); }
+blockquote p { margin: 0; }
+
+blockquote .meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.empty, .error {
+  padding: 40px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+}
+
+.error { color: var(--warn); border-color: #fde68a; background: #fffbeb; }
+
+/* -- theming the widget --------------------------------------------------- */
+
+/*
+ * The entire supported theming surface: custom properties and ::part().
+ * Never a config object, and never a rule that reaches inside the shadow root
+ * (ADR-0004).
+ */
+quorum-nub {
+  --quorum-accent: #0f766e;
+  --quorum-radius: 10px;
+}

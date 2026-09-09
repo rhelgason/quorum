@@ -51,8 +51,10 @@ data/raw/
 data/labeled/
 !data/labeled/.gitkeep
 
-# Local ingest service log — real user feedback, never commit it
-data/*.jsonl
+# Local ingest service log — real user feedback, never commit it.
+# Unanchored, so it also covers examples/saas-app/data/. The anchored form
+# only matched the repo root, which is not where the example app writes.
+**/data/*.jsonl
 
 # Environment & secrets
 .env

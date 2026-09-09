@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Northwind Analytics</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <p class="logo"><span class="mark"></span> Northwind</p>
+        <nav class="nav" id="nav">
+          <a href="/" data-route="/">Dashboard</a>
+          <a href="/reports" data-route="/reports">Reports</a>
+          <a href="/settings" data-route="/settings">Settings</a>
+          <a href="/settings/security" data-route="/settings/security">Security</a>
+          <p class="sep">Internal</p>
+          <a href="/backlog">Product backlog</a>
+        </nav>
+      </aside>
+
+      <div class="main">
+        <header class="topbar">
+          <span class="crumb" id="crumb">/</span>
+          <div class="who">
+            <label class="plan" for="user">signed in as</label>
+            <select id="user"></select>
+            <span class="plan" id="plan"></span>
+          </div>
+        </header>
+        <main class="content" id="view"></main>
+      </div>
+    </div>
+
+    <!--
+      The entire integration.
+
+      No `endpoint` attribute: empty means same-origin, so this posts to
+      `/v0/ingest` on whatever host serves the page. `version` is not
+      decoration — it is a structural clustering signal, which is what turns
+      "twelve reports" into "twelve reports from /reports on 4.12.0".
+    -->
+    <quorum-nub
+      project="pk_demo_northwind"
+      version="4.12.0"
+      label="Feedback"
+      preset="soft"
+      position="bottom-right"
+      shortcut="mod+shift+k"
+    ></quorum-nub>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
