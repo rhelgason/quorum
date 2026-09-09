@@ -25,6 +25,8 @@
     "demo": "node examples/support-inbox/demo.ts",
     "serve": "node services/api/src/cli.ts",
     "app": "node examples/saas-app/start.ts",
+    "northwind": "node examples/northwind/report.ts",
+    "northwind:generate": "node examples/northwind/generate.ts",
     "lint": "npm run lint --workspaces --if-present",
     "size": "node tools/size/src/cli.ts",
     "check": "npm run typecheck && npm run test:coverage"

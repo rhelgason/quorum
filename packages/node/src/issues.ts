@@ -52,17 +52,28 @@ import { buildIdf, vectorize, type SparseVector } from '../../aggregate/src/vect
 import type { Submission, SubmissionKind, SubmissionSource } from './submission.ts';
 
 /**
- * Defaults follow ADR-0018's tuning direction — **a high online threshold plus
- * aggressive offline consolidation**, rather than one carefully-balanced
- * number. The high online threshold buys stable, order-robust assignments; the
- * offline pass recovers the recall it costs.
+ * Defaults follow ADR-0018's direction — **a high online threshold plus an
+ * offline consolidation pass** — with the consolidation threshold retuned
+ * against a second, larger corpus
+ * ([ADR-0024](../../../docs/adr/0024-consolidation-threshold-retuned.md)).
  *
- * These are a starting point, emphatically not tuned values. ADR-0018 measured
- * adjacent cells swinging between 3/10 and 6/10 on 161 synthetic items, so
- * only the direction is trustworthy. Sweep them against your own data.
+ * The high online threshold buys stable, order-robust assignments; the offline
+ * pass recovers the recall it costs.
+ *
+ * **Consolidation was 0.03 and is now 0.10.** At 0.03 the pass hit the same
+ * top-10 agreement while collapsing pairwise precision to 23% on the eval
+ * corpus and 32% on a 428-item one, where it produced a single 53-member
+ * cluster against a truth of 25 topics. 0.10 matches its rank agreement, nearly
+ * doubles precision, and scores higher on F1 on both — it is better on every
+ * axis measured, not a trade.
+ *
+ * Still not tuned values in any strong sense: both corpora are synthetic, and
+ * a threshold that has to be re-derived when the corpus grows is a sign the
+ * mechanism wants a size-relative criterion rather than a constant. Sweep them
+ * against your own data.
  */
 export const DEFAULT_ONLINE_THRESHOLD = 0.25;
-export const DEFAULT_CONSOLIDATE_THRESHOLD = 0.03;
+export const DEFAULT_CONSOLIDATE_THRESHOLD = 0.1;
 
 export interface ConsolidateSettings {
   /** Linkage similarity required to merge. Default {@link DEFAULT_CONSOLIDATE_THRESHOLD}. */

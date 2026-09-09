@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="724" height="400" viewBox="0 0 724 400" role="img" aria-label="What Northwind should build next. 428 submissions → 59 issues · weighted unique users × recency × growth">
+<rect width="724" height="400" fill="#fcfcfb"/>
+<text x="20" y="28" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#0b0b0b" >What Northwind should build next</text>
+<text x="20" y="47" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#898781" >428 submissions → 59 issues · weighted unique users × recency × growth</text>
+<text x="20" y="88" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >1. The CSV export on the reports page just spin</text>
+<path d="M320 76 H616 a4 4 0 0 1 4 4 V86 a4 4 0 0 1 -4 4 H320 Z" fill="#184f95"/>
+<text x="628" y="88" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >26.2  ·  24u</text>
+<text x="20" y="118" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >2. Everything hangs for ages before the charts </text>
+<path d="M320 106 H484.4189312456382 a4 4 0 0 1 4 4 V116 a4 4 0 0 1 -4 4 H320 Z" fill="#1c5cab"/>
+<text x="496.4189312456382" y="118" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >14.7  ·  18u</text>
+<text x="20" y="148" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >3. I make a coffee while the home screen loads.</text>
+<path d="M320 136 H478.36935479845044 a4 4 0 0 1 4 4 V146 a4 4 0 0 1 -4 4 H320 Z" fill="#1c5cab"/>
+<text x="490.36935479845044" y="148" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >14.2  ·  16u</text>
+<text x="20" y="178" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >4. Why do I have to sign in again every hour?</text>
+<path d="M320 166 H458.75741756021404 a4 4 0 0 1 4 4 V176 a4 4 0 0 1 -4 4 H320 Z" fill="#256abf"/>
+<text x="470.75741756021404" y="178" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >12.5  ·  15u</text>
+<text x="20" y="208" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >5. Export to CSV times out every single time on</text>
+<path d="M320 196 H452.93622259952593 a4 4 0 0 1 4 4 V206 a4 4 0 0 1 -4 4 H320 Z" fill="#256abf"/>
+<text x="464.93622259952593" y="208" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >12.0  ·  13u</text>
+<text x="20" y="238" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >6. Doing these one by one takes my entire Frida</text>
+<path d="M320 226 H452.6426298656432 a4 4 0 0 1 4 4 V236 a4 4 0 0 1 -4 4 H320 Z" fill="#2a78d6"/>
+<text x="464.6426298656432" y="238" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >11.9  ·  13u</text>
+<text x="20" y="268" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >7. Please add a dark mode.</text>
+<path d="M320 256 H433.7377944499918 a4 4 0 0 1 4 4 V266 a4 4 0 0 1 -4 4 H320 Z" fill="#3987e5"/>
+<text x="445.7377944499918" y="268" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >10.3  ·  12u</text>
+<text x="20" y="298" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >8. Performance has fallen off a cliff in the la</text>
+<path d="M320 286 H432.14197130899015 a4 4 0 0 1 4 4 V296 a4 4 0 0 1 -4 4 H320 Z" fill="#3987e5"/>
+<text x="444.14197130899015" y="298" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >10.1  ·  9u</text>
+<text x="20" y="328" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >9. Clicking approve forty times in a row is pai</text>
+<path d="M320 316 H423.6449398019504 a4 4 0 0 1 4 4 V326 a4 4 0 0 1 -4 4 H320 Z" fill="#5598e7"/>
+<text x="435.6449398019504" y="328" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >9.4  ·  11u</text>
+<text x="20" y="358" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#52514e" >10. The app disappears when I try to use the cam</text>
+<path d="M320 346 H422.9141705759263 a4 4 0 0 1 4 4 V356 a4 4 0 0 1 -4 4 H320 Z" fill="#5598e7"/>
+<text x="434.9141705759263" y="358" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#898781" >9.3  ·  11u</text>
+<line x1="320" y1="68" x2="320" y2="368" stroke="#c3c2b7" stroke-width="1"/>
+</svg>

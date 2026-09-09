@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="418" viewBox="0 0 700 418" role="img" aria-label="Revenue weighting reorders the list. Same clustering and recency — only the revenue term changes.">
+<rect width="700" height="418" fill="#fcfcfb"/>
+<text x="20" y="28" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#0b0b0b" >Revenue weighting reorders the list</text>
+<text x="20" y="47" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#898781" >Same clustering and recency — only the revenue term changes.</text>
+<text x="250" y="68" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="600" text-anchor="middle" fill="#898781" >every account equal</text>
+<text x="470" y="68" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="600" text-anchor="middle" fill="#898781" >weighted by revenue</text>
+<path d="M258 86 C340 86, 380 86, 462 86" fill="none" stroke="#898781" stroke-width="1.5" opacity="0.35"/>
+<circle cx="258" cy="86" r="4" fill="#898781"/>
+<circle cx="462" cy="86" r="4" fill="#898781"/>
+<text x="246" y="90" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >1. The CSV export on the reports </text>
+<text x="482" y="90" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >1.</text>
+<text x="506" y="90" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#898781" >—</text>
+<path d="M258 112 C340 112, 380 112, 462 112" fill="none" stroke="#898781" stroke-width="1.5" opacity="0.35"/>
+<circle cx="258" cy="112" r="4" fill="#898781"/>
+<circle cx="462" cy="112" r="4" fill="#898781"/>
+<text x="246" y="116" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >2. Everything hangs for ages befo</text>
+<text x="482" y="116" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >2.</text>
+<text x="506" y="116" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#898781" >—</text>
+<path d="M258 138 C340 138, 380 138, 462 138" fill="none" stroke="#898781" stroke-width="1.5" opacity="0.35"/>
+<circle cx="258" cy="138" r="4" fill="#898781"/>
+<circle cx="462" cy="138" r="4" fill="#898781"/>
+<text x="246" y="142" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >3. I make a coffee while the home</text>
+<text x="482" y="142" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >3.</text>
+<text x="506" y="142" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#898781" >—</text>
+<path d="M258 190 C340 190, 380 164, 462 164" fill="none" stroke="#2a78d6" stroke-width="2" opacity="0.9"/>
+<circle cx="258" cy="190" r="4" fill="#2a78d6"/>
+<circle cx="462" cy="164" r="4" fill="#2a78d6"/>
+<text x="246" y="194" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >5. Why do I have to sign in again</text>
+<text x="482" y="168" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >4.</text>
+<text x="506" y="168" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#2a78d6" >▲ 1</text>
+<path d="M258 164 C340 164, 380 190, 462 190" fill="none" stroke="#e34948" stroke-width="2" opacity="0.9"/>
+<circle cx="258" cy="164" r="4" fill="#e34948"/>
+<circle cx="462" cy="190" r="4" fill="#e34948"/>
+<text x="246" y="168" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >4. Export to CSV times out every </text>
+<text x="482" y="194" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >5.</text>
+<text x="506" y="194" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#e34948" >▼ 1</text>
+<path d="M258 216 C340 216, 380 216, 462 216" fill="none" stroke="#898781" stroke-width="1.5" opacity="0.35"/>
+<circle cx="258" cy="216" r="4" fill="#898781"/>
+<circle cx="462" cy="216" r="4" fill="#898781"/>
+<text x="246" y="220" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >6. Doing these one by one takes m</text>
+<text x="482" y="220" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >6.</text>
+<text x="506" y="220" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#898781" >—</text>
+<path d="M258 294 C340 294, 380 242, 462 242" fill="none" stroke="#2a78d6" stroke-width="2" opacity="0.9"/>
+<circle cx="258" cy="294" r="4" fill="#2a78d6"/>
+<circle cx="462" cy="242" r="4" fill="#2a78d6"/>
+<text x="246" y="298" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >9. Please add a dark mode.</text>
+<text x="482" y="246" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >7.</text>
+<text x="506" y="246" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#2a78d6" >▲ 2</text>
+<path d="M258 372 C340 372, 380 268, 462 268" fill="none" stroke="#2a78d6" stroke-width="2" opacity="0.9"/>
+<circle cx="258" cy="372" r="4" fill="#2a78d6"/>
+<circle cx="462" cy="268" r="4" fill="#2a78d6"/>
+<text x="246" y="376" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >12. Performance has fallen off a c</text>
+<text x="482" y="272" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >8.</text>
+<text x="506" y="272" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#2a78d6" >▲ 4</text>
+<path d="M258 346 C340 346, 380 294, 462 294" fill="none" stroke="#2a78d6" stroke-width="2" opacity="0.9"/>
+<circle cx="258" cy="346" r="4" fill="#2a78d6"/>
+<circle cx="462" cy="294" r="4" fill="#2a78d6"/>
+<text x="246" y="350" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >11. Clicking approve forty times i</text>
+<text x="482" y="298" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >9.</text>
+<text x="506" y="298" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#2a78d6" >▲ 2</text>
+<path d="M258 242 C340 242, 380 320, 462 320" fill="none" stroke="#e34948" stroke-width="2" opacity="0.9"/>
+<circle cx="258" cy="242" r="4" fill="#e34948"/>
+<circle cx="462" cy="320" r="4" fill="#e34948"/>
+<text x="246" y="246" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="400" text-anchor="end" fill="#52514e" >7. The app disappears when I try </text>
+<text x="482" y="324" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start" fill="#0b0b0b" >10.</text>
+<text x="506" y="324" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start" fill="#e34948" >▼ 3</text>
+</svg>

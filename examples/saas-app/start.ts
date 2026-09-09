@@ -54,7 +54,11 @@ const quorum = new Quorum({ projectId, store });
 // seed time, so doing it repeatedly would leave the corpus dated from whenever
 // the store was first created while pretending otherwise.
 if (fresh) {
-  const result = await seed(quorum, join(here, '../support-inbox/inbox.csv'), { now: new Date() });
+  // Northwind's own corpus — 428 submissions across 25 topics — rather than
+  // the 45-row inbox `npm run demo` uses. The demo is a thirty-second read;
+  // this is the one the README's figures are computed from, and the one that
+  // shows the ranked list doing something a person could not do by hand.
+  const result = await seed(quorum, join(here, '../northwind/feedback.csv'), { now: new Date() });
   console.log(`\n  seeded ${String(result.inserted)} support tickets into ${dataPath}`);
 } else {
   console.log(`\n  using existing data in ${dataPath} (delete it to reseed)`);

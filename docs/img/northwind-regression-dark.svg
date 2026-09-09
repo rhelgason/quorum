@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="260" viewBox="0 0 700 260" role="img" aria-label="A regression, and the release that caused it. Weekly reports of the iOS capture crash. Nothing before 4.12.0; a wall of them after.">
+<rect width="700" height="260" fill="#1a1a19"/>
+<text x="20" y="28" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="15" font-weight="600" text-anchor="start" fill="#ffffff" >A regression, and the release that caused it</text>
+<text x="20" y="47" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11.5" font-weight="400" text-anchor="start" fill="#898781" >Weekly reports of the iOS capture crash. Nothing before 4.12.0; a wall of them after.</text>
+<line x1="44" y1="226" x2="680" y2="226" stroke="#2c2c2a" stroke-width="1"/>
+<text x="36" y="230" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="end" fill="#898781" >0</text>
+<line x1="44" y1="151" x2="680" y2="151" stroke="#2c2c2a" stroke-width="1"/>
+<text x="36" y="155" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="end" fill="#898781" >5</text>
+<line x1="44" y1="76" x2="680" y2="76" stroke="#2c2c2a" stroke-width="1"/>
+<text x="36" y="80" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="end" fill="#898781" >10</text>
+<line x1="423.5" y1="66" x2="423.5" y2="226" stroke="#e66767" stroke-width="2" stroke-dasharray="4 4"/>
+<text x="429.4621848739496" y="62" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="11" font-weight="600" text-anchor="start" fill="#e66767" >4.12.0 ships</text>
+<text x="62.705882352941174" y="242" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="10.5" font-weight="400" text-anchor="middle" fill="#898781" >wk 0</text>
+<text x="212.3529411764706" y="242" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="10.5" font-weight="400" text-anchor="middle" fill="#898781" >wk 4</text>
+<text x="362" y="242" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="10.5" font-weight="400" text-anchor="middle" fill="#898781" >wk 8</text>
+<path d="M421.11764705882354 91 H448.5294117647059 a4 4 0 0 1 4 4 V222 a4 4 0 0 1 -4 4 H421.11764705882354 Z" fill="#3987e5"/>
+<path d="M458.5294117647059 76 H485.9411764705883 a4 4 0 0 1 4 4 V222 a4 4 0 0 1 -4 4 H458.5294117647059 Z" fill="#3987e5"/>
+<path d="M495.9411764705883 166 H523.3529411764706 a4 4 0 0 1 4 4 V222 a4 4 0 0 1 -4 4 H495.9411764705883 Z" fill="#3987e5"/>
+<text x="511.64705882352945" y="242" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="10.5" font-weight="400" text-anchor="middle" fill="#898781" >wk 12</text>
+<text x="661.2941176470589" y="242" font-family="system-ui, -apple-system, "Segoe UI", sans-serif" font-size="10.5" font-weight="400" text-anchor="middle" fill="#898781" >wk 16</text>
+<line x1="44" y1="226" x2="680" y2="226" stroke="#383835" stroke-width="1"/>
+</svg>

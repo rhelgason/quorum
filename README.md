@@ -165,6 +165,94 @@ Worth trying, in order:
 
 See [`examples/saas-app`](examples/saas-app/README.md).
 
+## At a little more scale
+
+`npm run northwind` runs the pipeline over 428 pieces of feedback from 161
+accounts across 120 days and six releases, and prints what it found.
+
+```
+  submissions               428
+  accounts                  161 (89 paying)
+  issues found              59
+  compression               7.3× — 428 pieces of feedback into 59 decisions
+  assign on write           29ms for all 428
+  rank + explain            352ms
+```
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/northwind-ranked-dark.svg">
+  <img alt="Horizontal bar chart of Northwind's top ten issues by score. The CSV export timeout leads at 26.2 with 24 users, roughly double the next row." src="docs/img/northwind-ranked.svg" width="724">
+</picture>
+
+| # | Issue | Score | Users |
+| --- | --- | --- | --- |
+| 1 | The CSV export on the reports page just spins forever | 26.19 | 24 |
+| 2 | Everything hangs for ages before the charts appear | 14.71 | 18 |
+| 3 | I make a coffee while the home screen loads | 14.18 | 16 |
+| 4 | Why do I have to sign in again every hour? | 12.46 | 15 |
+| 5 | Export to CSV times out on our larger workspaces | 11.96 | 13 |
+
+### Revenue weighting, isolated
+
+Same clustering, same recency, same growth — only the account-weight term
+changes. Log-scaled, so a $10k/month account counts as roughly three users
+rather than a hundred ([ADR-0015](docs/adr/0015-log-scaled-account-weight.md)):
+revenue orders the list without owning it.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/northwind-weighting-dark.svg">
+  <img alt="Slope chart comparing issue ranks with every account equal against ranks weighted by revenue. Most rows hold position; a performance complaint rises four places, a mobile crash falls three." src="docs/img/northwind-weighting.svg" width="700">
+</picture>
+
+The biggest mover rises four places — a performance complaint concentrated in
+paying accounts. Nothing moves ten places, which is the point: this is a
+reweighting, not a different product.
+
+### A regression, and the release that caused it
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/northwind-regression-dark.svg">
+  <img alt="Weekly bar chart of iOS capture crash reports. Zero reports for the first ten weeks, then a sharp cluster beginning exactly at the 4.12.0 release marker." src="docs/img/northwind-regression.svg" width="700">
+</picture>
+
+Every report of the iOS capture crash carries a route and an app version
+because `docs/PROTOCOL.md` makes both first-class fields rather than metadata
+soup. That is what lets a row read "12 reports from /mobile/capture, 4.12.0, in
+72 hours" instead of "12 reports".
+
+### And what it gets wrong
+
+The report prints its own failures, because a demo that only shows its good
+side is an advertisement:
+
+```
+  "dashboard-slow" reached the top 10 as 3 separate rows:
+      · Everything hangs for ages before the charts appear.
+      · I make a coffee while the home screen loads.
+      · Performance has fallen off a cliff in the last month.
+```
+
+Three sentences about one problem, sharing no content words. TF-IDF cosine
+cannot merge them at any threshold — this is the gap embeddings exist to close
+and the reason they are in v0.1
+([ADR-0019](docs/adr/0019-embedding-quality-bar.md)). Overall: 59 issues
+against 25 true topics.
+
+> **This corpus is synthetic**, and that bounds what it proves. The generator
+> knows which topic each sentence belongs to; the pipeline does not — but the
+> same person wrote both, so this is evidence the system *runs* at scale, not
+> that it clusters *accurately*. Quality is measured separately against a
+> labeled corpus in [`packages/eval`](packages/eval), and replacing that one
+> with real data is the highest-leverage task on the roadmap.
+>
+> It has already earned its keep: running it caught a shipped default that was
+> over-merging badly, and the fix changed a threshold that had stood since the
+> two-tier design was validated
+> ([ADR-0024](docs/adr/0024-consolidation-threshold-retuned.md)). A second
+> corpus found in an afternoon what one corpus had hidden for a week.
+
+See [`examples/northwind`](examples/northwind/README.md).
+
 ## Why not just use a feedback board
 
 The structural openings this is built into:
@@ -229,6 +317,7 @@ tools/           dev-only, dependency-free: CDP browser driver, TS-stripping dev
 examples/
   support-inbox/ runnable demo — CSV in, ranked backlog out
   saas-app/      the whole loop — widget → ingest → ranked dashboard
+  northwind/     428 synthetic submissions — the pipeline at scale, and the README's figures
 ```
 
 Tests run on Node's built-in runner with zero dependencies:
@@ -239,7 +328,8 @@ npm run app         # the demo product + ingest + ranked backlog
 npm run demo        # import an example support inbox, print a ranked backlog
 npm run serve       # ingest + read API on http://localhost:8787
 npm run eval        # clustering baselines + rank agreement against the corpus
-npm run size        # the 15KB budget — 12.2KB today, as an upper bound
+npm run northwind   # the pipeline over 428 submissions; writes the README's figures
+npm run size        # the 15KB budget — 13.0KB today, as an upper bound
 npm run test:browser # the DOM suite; needs a Chromium-family browser
 ```
 
@@ -271,7 +361,7 @@ The decisions that shape everything else:
 
 ## Constraints we hold ourselves to
 
-- **≤15KB gzipped** for core + nub. **12.2KB today** (`npm run size`), measured
+- **≤15KB gzipped** for core + nub. **13.0KB today** (`npm run size`), measured
   as an upper bound — no minification, no tree shaking — so a real bundle is
   smaller. CI fails on regression.
 - **Free by default.** No API key, no account, no spend. The LLM is off unless

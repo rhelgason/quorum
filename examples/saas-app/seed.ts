@@ -22,7 +22,7 @@ import { readFileSync } from 'node:fs';
 
 import { parseCsvRecords } from '../../packages/node/src/csv.ts';
 import type { ImportResult, ImportRow, Quorum } from '../../packages/node/src/client.ts';
-import type { SubmissionKind } from '../../packages/core/src/protocol.ts';
+import type { SubmissionKind, SubmissionSource } from '../../packages/core/src/protocol.ts';
 
 const KINDS: ReadonlySet<string> = new Set(['feature_request', 'bug', 'praise', 'question', 'rage']);
 
@@ -60,12 +60,17 @@ export function seedRows(csv: string, options: SeedOptions): ImportRow[] {
       // store collides on these rather than doubling every issue's evidence.
       ...(record['ticket_id'] !== undefined && { id: record['ticket_id'] }),
       ...(kind !== undefined && KINDS.has(kind) && { kind: kind as SubmissionKind }),
+      ...(record['source'] !== undefined && record['source'] !== ''
+        ? { source: record['source'] as SubmissionSource }
+        : {}),
       user: {
         externalId: record['requester_id'] ?? '',
         ...(mrr !== undefined && mrr !== '' && { traits: { mrr } }),
       },
       context: {
         ...(record['page'] !== undefined && record['page'] !== '' && { route: record['page'] }),
+        ...(record['app_version'] !== undefined && record['app_version'] !== ''
+          && { appVersion: record['app_version'] }),
       },
     };
   });
