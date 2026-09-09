@@ -26,7 +26,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
 import { Quorum } from '../../packages/node/src/client.ts';
+import { DEFAULT_ONLINE_THRESHOLD } from '../../packages/node/src/issues.ts';
 import { FileStore } from '../../packages/node/src/file-store.ts';
+import { rebuildIndex } from '../../packages/node/src/rebuild.ts';
 import { createApiServer } from '../../services/api/src/server.ts';
 import { createDevServer } from '../../tools/devserver/src/serve.ts';
 import { seed } from './seed.ts';
@@ -57,7 +59,16 @@ if (fresh) {
   console.log(`\n  using existing data in ${dataPath} (delete it to reseed)`);
 }
 
-const api = createApiServer({ quorum, now: () => new Date() });
+// Rebuild the cluster index from the log, then hand the API a Quorum that
+// assigns on write. Same code path as `npm run serve`, so the demo exercises
+// what a self-hoster runs rather than a simplified version of it.
+const { index, clusters } = await rebuildIndex(store, projectId, {
+  threshold: DEFAULT_ONLINE_THRESHOLD,
+});
+const indexed = new Quorum({ projectId, store, index });
+console.log(`  ${String(clusters)} clusters indexed on write\n`);
+
+const api = createApiServer({ quorum: indexed, now: () => new Date() });
 await new Promise<void>((ready) => api.listen(apiPort, '127.0.0.1', ready));
 
 const app = createDevServer({

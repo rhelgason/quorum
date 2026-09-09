@@ -29,7 +29,10 @@ export {
   buildIssues,
   DEFAULT_CONSOLIDATE_THRESHOLD,
   DEFAULT_ONLINE_THRESHOLD,
+  toDoc,
 } from './issues.ts';
+
+export { rebuildIndex } from './rebuild.ts';
 export type {
   BuildIssuesOptions,
   ConsolidateSettings,

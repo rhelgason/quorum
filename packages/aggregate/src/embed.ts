@@ -102,6 +102,21 @@ export class DenseCentroid {
     }
     return normalizeDense(mean);
   }
+
+  /** The raw sum, for persistence. Empty when nothing has been added. */
+  rawSum(): Float64Array {
+    return this.sum ?? new Float64Array(0);
+  }
+
+  /** Rebuild from a persisted sum. */
+  static fromSum(sum: Float64Array, count: number): DenseCentroid {
+    const centroid = new DenseCentroid();
+    if (sum.length > 0) {
+      centroid.sum = Float64Array.from(sum);
+      centroid.count = count;
+    }
+    return centroid;
+  }
 }
 
 export interface OpenAICompatibleEmbedderConfig {

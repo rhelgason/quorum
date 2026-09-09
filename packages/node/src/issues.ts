@@ -98,6 +98,15 @@ export interface BuildIssuesOptions {
   limit?: number;
   /** Passed through to `rank`. `now` comes from this object instead. */
   rank?: Omit<RankOptions, 'now'>;
+  /**
+   * Submission id → cluster id, from write-time assignment.
+   *
+   * When supplied, the online clustering tier is skipped entirely: a read
+   * becomes ranking over stored groups rather than re-deriving them. Offline
+   * consolidation still runs on top, because that tier is where over-splitting
+   * gets repaired ([ADR-0018](../../../docs/adr/0018-two-tier-clustering-validated.md)).
+   */
+  assignments?: ReadonlyMap<string, string>;
 }
 
 export interface IssueQuote {
@@ -174,7 +183,18 @@ export function buildIssues(
     ...(options.structuralBonus !== undefined && { structuralBonus: options.structuralBonus }),
   };
 
-  const { labels } = clusterDocs(docs, clusterOptions);
+  // Precomputed assignments win. When ingest has already placed each
+  // submission with `ClusterIndex`, re-deriving the online tier here would
+  // cost O(corpus) per read and — because the IDF table shifts as the corpus
+  // grows — could quietly move an assignment a user has already seen.
+  //
+  // A submission with no stored assignment falls back to clustering, so a
+  // partially indexed store still produces a complete list rather than
+  // silently dropping rows.
+  const labels =
+    options.assignments === undefined
+      ? clusterDocs(docs, clusterOptions).labels
+      : assignedLabels(submissions, docs, options.assignments, clusterOptions);
   const finalLabels = options.consolidate === false
     ? labels
     : consolidateLabels(labels, vectors, options.consolidate ?? {});
@@ -233,7 +253,14 @@ export function buildIssues(
   return issues;
 }
 
-function toDoc(s: Submission): Doc {
+/**
+ * A stored submission as a clustering document.
+ *
+ * Exported so a service can replay its log into a `ClusterIndex` and get
+ * byte-identical assignments to the ones ingest made — the replay is only
+ * exact if it builds the same documents.
+ */
+export function toDoc(s: Submission): Doc {
   return {
     id: s.id,
     // The derived form, not the verbatim body. For ordinary feedback they are
@@ -293,6 +320,40 @@ function consolidateLabels(
     ...(settings.rejected !== undefined && { rejected: settings.rejected }),
   });
   return applyMerges(labels, proposals);
+}
+
+/**
+ * Use stored assignments, clustering only what is missing.
+ *
+ * A store can be partially indexed — an index file lost, or submissions
+ * imported before indexing existed. Dropping those rows would silently shrink
+ * the ranked list; clustering them among themselves keeps the list complete
+ * and confines the recompute to the unindexed tail.
+ */
+function assignedLabels(
+  submissions: readonly Submission[],
+  docs: readonly Doc[],
+  assignments: ReadonlyMap<string, string>,
+  clusterOptions: ClusterOptions,
+): string[] {
+  const missing = submissions
+    .map((submission, i) => ({ submission, doc: docs[i] as Doc }))
+    .filter(({ submission }) => !assignments.has(submission.id));
+
+  if (missing.length === 0) {
+    return submissions.map((submission) => assignments.get(submission.id) as string);
+  }
+
+  // Prefixed, so a recovered id can never collide with a stored one.
+  const recovered = clusterDocs(
+    missing.map(({ doc }) => doc),
+    clusterOptions,
+  ).labels;
+  const byId = new Map(missing.map(({ submission }, i) => [submission.id, `u:${recovered[i] as string}`]));
+
+  return submissions.map(
+    (submission) => assignments.get(submission.id) ?? (byId.get(submission.id) as string),
+  );
 }
 
 function groupBy(

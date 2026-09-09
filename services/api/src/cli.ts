@@ -12,7 +12,9 @@
  */
 
 import { Quorum } from '../../../packages/node/src/client.ts';
+import { DEFAULT_ONLINE_THRESHOLD } from '../../../packages/node/src/issues.ts';
 import { FileStore } from '../../../packages/node/src/file-store.ts';
+import { rebuildIndex } from '../../../packages/node/src/rebuild.ts';
 import { createApiServer } from './server.ts';
 import { createRateLimiter } from './rate-limit.ts';
 
@@ -35,7 +37,15 @@ const store = new FileStore({
   },
 });
 
-const quorum = new Quorum({ projectId, store });
+// Clusters are assigned once, on write, and the index is rebuilt by replaying
+// the log at boot rather than persisted beside it. The replay is exact —
+// leader-follower is deterministic and an append-only log preserves order — so
+// there is no second copy of derived state to fall out of sync. It costs a
+// pass over the corpus at startup, which is the right trade until it isn't.
+const threshold = Number(process.env['QUORUM_THRESHOLD'] ?? DEFAULT_ONLINE_THRESHOLD);
+const rebuilt = await rebuildIndex(store, projectId, { threshold });
+
+const quorum = new Quorum({ projectId, store, index: rebuilt.index });
 
 const server = createApiServer({
   quorum,
@@ -54,6 +64,10 @@ server.listen(port, () => {
   console.log(`\nquorum api on http://localhost:${String(port)}`);
   console.log(`  data      ${dataPath}${count > 0 ? '' : ' (new)'}`);
   console.log(`  project   ${projectId}`);
+  console.log(
+    `  clusters  ${String(rebuilt.clusters)} from ${String(rebuilt.submissions)} submissions, ` +
+      `assigned on write (threshold ${String(threshold)})`,
+  );
   console.log(`  auth      ${projectKey === undefined ? 'open — set QUORUM_PROJECT_KEY to require one' : 'project key required'}`);
   console.log(
     `  writes    ${

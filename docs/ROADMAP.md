@@ -44,7 +44,7 @@ widget required to see value.
       protocol write path and the ranked read API over `node:http` with zero
       dependencies, backed by a durable append-only log that survives restarts
       and deduplicates across them. **Not Postgres**, no presigned capture
-      upload and clusters are still recomputed per read;
+      upload;
       write-time assignment with persisted centroids is the real remaining gap
 - [x] Write-path rate limiting, so the protocol's `429` row has a server that
       sends it — a sliding window with `Retry-After`, checked before the body
@@ -153,6 +153,13 @@ track** — do not treat any threshold as tuned until that lands.
 - [ ] pgvector persistence for embeddings
 - [ ] Hybrid weights (lexical : semantic : structural) tuned on rank agreement
 - [x] Online leader-follower assignment with incremental centroids
+- [x] **Write-time assignment with persistable centroids** (`ClusterIndex`) —
+      a read ranks stored groups instead of re-deriving them, and an
+      assignment is permanent once made. The service rebuilds the index by
+      replaying its append-only log at boot rather than persisting a second
+      copy of derived state; the replay is exact, so it cannot disagree with
+      the log. Pinned by a test asserting byte-identical output to the batch
+      clusterer under a fixed IDF
 - [x] Offline consolidation: agglomerative merge proposals, average linkage,
       human-gated, with rejection memory and `locked` clusters respected
       ([ADR-0018](adr/0018-two-tier-clustering-validated.md))

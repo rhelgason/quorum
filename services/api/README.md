@@ -103,19 +103,39 @@ id lookup, or suitable for a million rows — the whole log lives in memory. The
 `SubmissionStore` interface is the seam, so swapping in Postgres is a new class
 rather than a rewrite of anything above it.
 
+## Clusters are assigned on write
+
+They used to be recomputed on every read, which cost O(corpus) per request and
+— because the IDF table shifts as the corpus grows — meant a recompute could
+move an assignment a reader had already seen. A ranked list that quietly
+reorganises between two page loads is not one anybody trusts.
+
+Now `ClusterIndex` assigns each submission once, at ingest, and a read ranks
+stored groups. A write is O(clusters); a read no longer re-derives anything.
+
+**The index is rebuilt by replaying the log at boot, not persisted beside it.**
+The replay is exact rather than approximate — leader-follower is deterministic,
+term statistics evolve identically, and an append-only log preserves order — so
+it produces the assignments ingest originally made, member for member. That
+removes an entire category of bug: a persisted index is a second copy of
+derived state that can be stale, truncated, or written by a build with
+different defaults, and each of those shows up as a ranked list that is subtly
+wrong with nothing to compare it against. A rebuilt one cannot disagree with
+the log, because it *is* the log.
+
+The cost is a pass over the corpus at startup. For thousands of submissions
+that is milliseconds. `ClusterIndex.toJSON()` exists and is tested for when it
+stops being — the change is then to load it and replay only the tail.
+
+Set `QUORUM_THRESHOLD` to override the online assignment threshold. Offline
+consolidation still runs per read; that tier is where over-splitting is
+repaired ([ADR-0018](../../docs/adr/0018-two-tier-clustering-validated.md)) and
+it is cheap because it works over clusters rather than submissions.
+
 ## The real remaining gap
 
-**Clusters are still recomputed on every read.** This service persists
-*submissions*, not *cluster assignments*, so `GET /v0/issues` runs the whole
-pipeline each time. Two consequences:
-
-- Cost is O(corpus) per request rather than O(new submissions). Fine for a
-  self-host with thousands of items; not fine beyond that.
-- Cluster ids are stable as feedback is appended, because leader-follower never
-  reassigns and insertion order is preserved — but the IDF table shifts as the
-  corpus grows, so a full recompute can move an early assignment. That is the
-  churn ADR-0005 warns about, and write-time assignment with persisted
-  centroids is what actually fixes it.
+**Not Postgres, and no pgvector.** Everything above still lives in one process
+with a JSONL log behind it.
 
 That, plus pgvector for embeddings, is what `canonical_issues` in DATA-MODEL is
 for and what remains genuinely unbuilt.

@@ -20,6 +20,7 @@ import {
   exceptionFallbackKey,
   fingerprint,
 } from './exception.ts';
+import { ClusterIndex } from '../../aggregate/src/cluster-index.ts';
 import { buildIssues, type BuildIssuesOptions, type Issue } from './issues.ts';
 import { MemoryStore, type SubmissionStore } from './store.ts';
 import {
@@ -54,6 +55,18 @@ export interface QuorumOptions {
   store?: SubmissionStore;
   /** Injectable clock, for tests and reproducible imports. */
   now?: () => Date;
+  /**
+   * Assign clusters at write time instead of recomputing them per read.
+   *
+   * Without one, `issues()` runs the whole pipeline on every call: O(corpus)
+   * per request, and the IDF table shifts as the corpus grows so a recompute
+   * can move an assignment a reader has already seen. With one, a write is
+   * O(clusters) and an assignment is permanent.
+   *
+   * Absent by default, because it is state the caller has to persist. The
+   * service owns that; a script pointed at a CSV does not need it.
+   */
+  index?: ClusterIndex;
 }
 
 export interface CaptureContext {
@@ -179,12 +192,14 @@ export class Quorum {
   readonly projectId: string;
   readonly store: SubmissionStore;
   readonly #now: () => Date;
+  readonly #index: ClusterIndex | undefined;
 
   constructor(options: QuorumOptions) {
     if (options.projectId === '') throw new Error('projectId is required');
     this.projectId = options.projectId;
     this.store = options.store ?? new MemoryStore();
     this.#now = options.now ?? ((): Date => new Date());
+    this.#index = options.index;
   }
 
   /**
@@ -419,9 +434,24 @@ export class Quorum {
     return { accepted, duplicate };
   }
 
-  /** The ranked list. See `issues.ts`. */
+  /**
+   * The ranked list. See `issues.ts`.
+   *
+   * With an index configured this ranks stored assignments; without one it
+   * re-derives them. The output shape is identical either way — the index
+   * changes what a read costs and whether yesterday's grouping is still
+   * yesterday's grouping, not what a row means.
+   */
   async issues(options: BuildIssuesOptions): Promise<Issue[]> {
-    return buildIssues(await this.store.list(this.projectId), options);
+    return buildIssues(await this.store.list(this.projectId), {
+      ...options,
+      ...(this.#index !== undefined && { assignments: this.#index.assignments() }),
+    });
+  }
+
+  /** The write-time index, when one is configured. Persist it yourself. */
+  get index(): ClusterIndex | undefined {
+    return this.#index;
   }
 
   /** Every stored submission, in insertion order. */
@@ -461,7 +491,20 @@ export class Quorum {
 
   async #put(submission: Submission): Promise<CaptureResult> {
     const stored = await this.store.put(submission);
-    if (stored) return { submission, stored };
+    if (stored) {
+      // Only for genuinely new submissions. `ClusterIndex.add` is idempotent
+      // by doc id, but indexing a known duplicate would still be a lie about
+      // what happened, and the store already told us.
+      this.#index?.add({
+        id: submission.id,
+        text: submission.clusterText,
+        ...(submission.route !== undefined && { route: submission.route }),
+        ...(submission.appVersion !== undefined && { appVersion: submission.appVersion }),
+        ...(submission.platform !== undefined && { platform: submission.platform }),
+        ...(submission.embedding !== undefined && { vector: submission.embedding }),
+      });
+      return { submission, stored };
+    }
     // Return what is already there, so a caller reading the result of a retry
     // sees the original record rather than the one that lost the race.
     const existing = await this.store.get(submission.projectId, submission.id);

@@ -130,4 +130,24 @@ export class Centroid {
     for (const [term, value] of this.sum) mean.set(term, value / this.count);
     return l2Normalize(mean);
   }
+
+  /**
+   * The raw sum, for persistence.
+   *
+   * The sum and not the mean, for the same reason the class stores it that
+   * way: restoring from a normalized mean would lose the member count, and
+   * with it the ability to add or remove a member without recomputing over
+   * every one of them.
+   */
+  rawSum(): ReadonlyMap<string, number> {
+    return this.sum;
+  }
+
+  /** Rebuild from a persisted sum. */
+  static fromSum(sum: SparseVector, count: number): Centroid {
+    const centroid = new Centroid();
+    for (const [term, value] of sum) centroid.sum.set(term, value);
+    centroid.count = count;
+    return centroid;
+  }
 }
