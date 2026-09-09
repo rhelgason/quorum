@@ -200,6 +200,56 @@ describe('the server', () => {
     assert.equal(upstream[0]?.url, 'http://api.invalid/v0/issues?limit=5');
   });
 
+  it('forwards the upstream response headers, not just its content type', async () => {
+    const withHeaders = createDevServer({
+      root,
+      apiOrigin: 'http://api.invalid',
+      fetchImpl: (async () =>
+        new Response('{"error":"rate_limited"}', {
+          status: 429,
+          headers: {
+            'content-type': 'application/json',
+            'retry-after': '60',
+            'access-control-expose-headers': 'retry-after',
+          },
+        })) as unknown as typeof fetch,
+    });
+    await new Promise<void>((ready) => withHeaders.listen(0, '127.0.0.1', ready));
+    const base429 = `http://127.0.0.1:${(withHeaders.address() as { port: number }).port}`;
+
+    const res = await fetch(`${base429}/v0/ingest`, { method: 'POST', body: '{}' });
+
+    // Dropping these silently breaks a contract the client depends on: a 429
+    // whose Retry-After is stripped makes the transport fall back to its own
+    // jittered backoff and ignore the number the server just computed.
+    assert.equal(res.status, 429);
+    assert.equal(res.headers.get('retry-after'), '60');
+    assert.equal(res.headers.get('access-control-expose-headers'), 'retry-after');
+
+    await new Promise<void>((done) => withHeaders.close(() => done()));
+  });
+
+  it('recomputes content-length rather than forwarding a stale one', async () => {
+    const stale = createDevServer({
+      root,
+      apiOrigin: 'http://api.invalid',
+      fetchImpl: (async () =>
+        // A length that does not match the body. Forwarding it would truncate
+        // the response or hang the connection.
+        new Response('{"ok":true}', {
+          status: 200,
+          headers: { 'content-type': 'application/json', 'content-length': '9999' },
+        })) as unknown as typeof fetch,
+    });
+    await new Promise<void>((ready) => stale.listen(0, '127.0.0.1', ready));
+    const staleBase = `http://127.0.0.1:${(stale.address() as { port: number }).port}`;
+
+    const res = await fetch(`${staleBase}/v0/issues`);
+    assert.deepEqual(await res.json(), { ok: true });
+
+    await new Promise<void>((done) => stale.close(() => done()));
+  });
+
   it('answers 502 with a usable message when the API is down', async () => {
     const down = createDevServer({
       root,

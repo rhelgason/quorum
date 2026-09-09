@@ -219,20 +219,53 @@ async function proxy(
   }
 
   const payload = Buffer.from(await upstream.arrayBuffer());
+
+  // Forward the upstream's headers, not just its content type.
+  //
+  // Dropping them silently breaks contracts the client depends on: a `429`
+  // arrived through here with its `Retry-After` stripped, so the transport
+  // fell back to its own jittered backoff and ignored the number the server
+  // had just computed. Anything the API decided to say, the caller should hear.
+  const forwarded: Record<string, string> = {};
+  for (const [name, value] of upstream.headers) {
+    // Recomputed by `send`, or meaningless once the body has been buffered.
+    if (HOP_BY_HOP.has(name.toLowerCase())) continue;
+    forwarded[name] = value;
+  }
+
   send(
     res,
     upstream.status,
     upstream.headers.get('content-type') ?? 'application/json; charset=utf-8',
     payload,
+    forwarded,
   );
 }
 
-function send(res: ServerResponse, status: number, type: string, body: string | Buffer): void {
+/** Headers that describe this hop rather than the response. */
+const HOP_BY_HOP = new Set([
+  'content-length',
+  'content-encoding',
+  'transfer-encoding',
+  'connection',
+  'keep-alive',
+]);
+
+function send(
+  res: ServerResponse,
+  status: number,
+  type: string,
+  body: string | Buffer,
+  extra: Record<string, string> = {},
+): void {
   const payload = typeof body === 'string' ? Buffer.from(body) : body;
   res.writeHead(status, {
+    'cache-control': 'no-store',
+    ...extra,
+    // After `extra`, because these two are facts about what is being written
+    // here and an upstream's stale values would be wrong.
     'content-type': type,
     'content-length': payload.length,
-    'cache-control': 'no-store',
   });
   res.end(payload);
 }

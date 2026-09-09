@@ -30,6 +30,7 @@ import { DEFAULT_ONLINE_THRESHOLD } from '../../packages/node/src/issues.ts';
 import { FileStore } from '../../packages/node/src/file-store.ts';
 import { rebuildIndex } from '../../packages/node/src/rebuild.ts';
 import { createApiServer } from '../../services/api/src/server.ts';
+import { createRateLimiter } from '../../services/api/src/rate-limit.ts';
 import { createDevServer } from '../../tools/devserver/src/serve.ts';
 import { seed } from './seed.ts';
 
@@ -68,7 +69,14 @@ const { index, clusters } = await rebuildIndex(store, projectId, {
 const indexed = new Quorum({ projectId, store, index });
 console.log(`  ${String(clusters)} clusters indexed on write\n`);
 
-const api = createApiServer({ quorum: indexed, now: () => new Date() });
+const api = createApiServer({
+  quorum: indexed,
+  now: () => new Date(),
+  // The same defaults `npm run serve` uses. Far above anything a human
+  // clicking a widget will reach, and present so the demo exercises the write
+  // path a self-hoster actually gets rather than an unprotected version of it.
+  rateLimiter: createRateLimiter({ limit: 120, windowMs: 60_000 }),
+});
 await new Promise<void>((ready) => api.listen(apiPort, '127.0.0.1', ready));
 
 const app = createDevServer({
