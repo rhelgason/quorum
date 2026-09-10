@@ -167,7 +167,7 @@ and why they are in v0.1.
 
 ## Status
 
-Early, and further along than most things at this stage. **1,156 tests, zero
+Early, and further along than most things at this stage. **1,158 tests, zero
 runtime dependencies.**
 
 | Package | State |
@@ -176,16 +176,20 @@ runtime dependencies.**
 | `@quorum/aggregate` | ✅ TF-IDF clustering, write-time assignment, offline consolidation, split/outlier proposals, SimHash/LSH, explainable ranking |
 | `@quorum/node` | ✅ CSV/inbox import, exception capture, protocol ingest, ranked read API |
 | `@quorum/api` | ✅ `node:http` ingest + read, durable append-only log, rate limiting. **Not Postgres** |
-| `@quorum/web` | ⚠️ `<quorum-nub>` wired end to end — identify, route/version tagging, redaction, offline queue, element picker, frustration detection. Rendering covered by a 26-test browser suite; 20 verified green by hand, the 6 picker tests not yet run |
+| `@quorum/web` | ✅ `<quorum-nub>` wired end to end — identify, route/version tagging, redaction, offline queue, element picker, frustration detection. Rendering covered by a 26-test browser suite driving a real Chrome — green in CI on every push |
 | `@quorum/eval` | ✅ Labeled corpus, clustering + rank-agreement metrics, hybrid embedding sweep |
 | `@quorum/react` | ⛔ Not started |
 
-**The two honest gaps.** No real embedding model has ever been measured, so the
-ranked list recovers 5 of the correct top 10 against a proven ceiling of 10/10.
-The harness is built and waiting — `ollama pull nomic-embed-text`, three env
-vars, and `npm run eval` answers it
-([how](packages/eval/README.md#unblocking-this-in-five-minutes)). And **nothing here has been
-used by a real person yet.**
+**The measurement gap.** No real embedding model has ever been run through the
+sweep, so the ranked list recovers 5 of the correct top 10 against a proven
+ceiling of 10/10. The harness is built and waiting: `ollama pull
+nomic-embed-text`, three env vars, and `npm run eval` answers it
+([how](packages/eval/README.md#unblocking-this-in-five-minutes)).
+
+**The other gap, worth saying plainly:** nothing here has been used by a real
+person. Every layer is tested and the DOM layer runs in a real browser on every
+push — but tests are not users, and no claim on this page rests on anyone
+having tried it.
 
 **Not built:** framework wrappers, DOM capture, presigned capture upload,
 merge/split review UI, Postgres, the write-back integrations.
@@ -244,7 +248,7 @@ examples/
 ```
 
 ```bash
-npm test              # 1,156 tests, no install required
+npm test              # 1,158 tests, no install required
 npm run app           # the demo product + ingest + ranked backlog
 npm run demo          # import a support inbox, print a ranked backlog
 npm run northwind     # the pipeline at scale; regenerates the figures above

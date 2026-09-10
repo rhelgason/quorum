@@ -4,38 +4,33 @@ The `<quorum-nub>` custom element for [Quorum](../../README.md), and the
 browser client behind it. Shadow DOM, three presets, CSS custom property
 theming. Zero runtime dependencies.
 
-> ### Status: run in a real browser, and it found things
+> ### Status: verified in a real browser, on every push
 >
 > The pure modules — attribute parsing, presets and stylesheet generation,
 > shortcut matching, panel copy, the client, storage adapters — are tested
-> (116 tests). `nub.ts` has a **26-test browser suite** driving an installed
-> Chrome over CDP ([ADR-0022](../../docs/adr/0022-verify-the-dom-layer-over-cdp.md)).
+> (116 tests). `nub.ts` has a **26-test browser suite** driving a real Chrome
+> over CDP ([ADR-0022](../../docs/adr/0022-verify-the-dom-layer-over-cdp.md)),
+> and **CI runs it on every push**: 26 passed, 0 skipped.
 >
 > ```bash
 > npm run test:browser
 > ```
 >
-> **It cannot be run in the environment this was authored in** — Chrome is
-> installed and will not start (a macOS Mach bootstrap denial, unrelated to
-> Quorum). It has been run elsewhere three times, and the history is the
-> reason this section is worth reading:
+> It cannot be run in the environment this was authored in — Chrome is
+> installed and will not start there (a macOS Mach bootstrap denial, unrelated
+> to Quorum) — which is why the history below is worth keeping:
 >
 > | Run | Result | What it found |
 > | --- | --- | --- |
 > | 1 | 1/20 | Two bugs in the CDP driver — `replMode` silently defeating `awaitPromise`, and a navigation wait that could resolve against `about:blank`. |
 > | 2 | 17/20 | Two real defects in the element, plus one wrong assertion in the suite itself. |
-> | 3 | 20/20 | Green. |
+> | 3 | 20/20 | Green, by hand. |
+> | CI | 26/26 | Green, including the six picker tests, and now on every push. |
 >
-> **Six element-picker tests were added after run 3 and have never executed.**
-> So: everything the suite covered as of run 3 is verified in a real browser;
-> the picker's rendering and event handling are not. That is the current edge
-> of what is known, and the next `npm run test:browser` moves it.
->
-> What is verified without a browser: every module the browser would load
-> resolves, type-strips clean, and imports no Node builtin
-> (`examples/saas-app/graph.test.ts`), and the whole write path works end to
-> end against the real HTTP service (`services/api/src/roundtrip.test.ts`).
-> That is delivery and wiring, not rendering.
+> **What is still not covered:** one browser engine. The suite drives whatever
+> Chromium-family browser is present, with no pinned version and no Firefox or
+> WebKit. For a custom element built on stable platform APIs that is an
+> acceptable risk; for anything touching layout it would not be.
 
 ## Usage
 

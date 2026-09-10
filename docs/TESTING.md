@@ -78,21 +78,27 @@ disconnect.
 
 These skip with a reason when no browser is found, so `npm test` stays green on
 a machine without one. `QUORUM_BROWSER_REQUIRED=1` — which `npm run
-test:browser` sets — turns the skip into a failure, because otherwise a broken
-launch is indistinguishable from a missing browser and the DOM layer quietly
-stops being tested again.
+test:browser` and the CI job both set — turns the skip into a failure, because
+otherwise a broken launch is indistinguishable from a missing browser and the
+DOM layer quietly stops being tested again.
+
+`npm run test:coverage` skips the suite by name instead of running it. Coverage
+already excludes those files from measurement — the code executes in Chrome, so
+Node's instrumentation cannot see it either way — so running it there bought
+nothing and made the main build job depend on a working browser. It hung one CI
+run before that was noticed.
 
 > **They cannot run in the authoring environment.** Chrome is installed here
 > and will not start: a macOS Mach bootstrap denial, unrelated to Quorum, that
 > kills it before it prints a DevTools endpoint. Run it on a normal machine.
 >
-> It has been, three times. Run 1 was 1/20 and every failure was in the driver;
-> run 2 was 17/20 and every failure was real — two defects in the element and
-> one wrong assertion in the suite; run 3 was green. All of that is written up
-> in [`packages/web/README.md`](../packages/web/README.md).
+> It has been, four times, and the last one was CI: **26 passed, 0 skipped**,
+> on a real Chrome on a GitHub runner. It now runs on every push, so the DOM
+> layer is continuously verified rather than verified when someone remembers.
 >
-> Six element-picker tests were added after run 3 and have not executed. The
-> suite is 26 tests, 20 of them verified in a real browser.
+> The earlier runs are worth reading — 1/20, then 17/20, then green — and are
+> written up in [`packages/web/README.md`](../packages/web/README.md). Every
+> failure in run 1 was in the driver; every failure in run 2 was real.
 
 A note on iterating here, since it is unusual: each run costs a round trip
 through a human. That changes the economics — batch the fixes, harden the test
