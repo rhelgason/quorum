@@ -114,3 +114,20 @@ describe('parseEndpoint', () => {
     assert.equal(parseEndpoint(`${partial}34/devtools/browser/abc\n`), 'ws://127.0.0.1:51234/devtools/browser/abc');
   });
 });
+
+describe('CI flags', () => {
+  it('always disables the shared-memory heuristic', () => {
+    // Containers give /dev/shm 64MB, and Chrome hangs rather than failing when
+    // it runs out. That cost a CI run that sat in progress until it was
+    // cancelled by hand, which is why this is unconditional.
+    assert.ok(chromeArgs('/tmp/p', true, {}).includes('--disable-dev-shm-usage'));
+  });
+
+  it('drops the sandbox only under CI', () => {
+    // Most runners have no user namespace, so the sandbox cannot start.
+    // Switching it off on someone's own machine should be a decision.
+    assert.ok(!chromeArgs('/tmp/p', true, {}).includes('--no-sandbox'));
+    assert.ok(chromeArgs('/tmp/p', true, { CI: 'true' }).includes('--no-sandbox'));
+    assert.ok(!chromeArgs('/tmp/p', true, { CI: '' }).includes('--no-sandbox'));
+  });
+});

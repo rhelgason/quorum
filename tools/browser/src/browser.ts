@@ -40,13 +40,30 @@ export interface PageError {
  * the command line to an already-running instance and exit, printing no
  * DevTools endpoint and leaving the launch to time out with no explanation.
  */
-export function chromeArgs(userDataDir: string, headless: boolean): string[] {
+export function chromeArgs(
+  userDataDir: string,
+  headless: boolean,
+  env: Record<string, string | undefined> = process.env,
+): string[] {
+  // Containers give /dev/shm 64MB by default, and Chrome does not fail when it
+  // runs out — it *hangs*, which is how this cost a CI run that sat in progress
+  // until it was cancelled by hand. Harmless outside a container, so it is
+  // unconditional rather than another thing to get wrong.
+  const shared = ['--disable-dev-shm-usage'];
+
+  // No user namespace on most CI runners, so the sandbox cannot start. Gated,
+  // because switching it off on a developer's own machine should be a decision
+  // rather than a default.
+  const sandbox = env['CI'] === undefined || env['CI'] === '' ? [] : ['--no-sandbox'];
+
   return [
     // Port 0 makes the kernel pick, and Chrome prints the real one on stderr.
     // Choosing a port ourselves is a race against every other process.
     '--remote-debugging-port=0',
     `--user-data-dir=${userDataDir}`,
     ...(headless ? ['--headless=new'] : []),
+    ...shared,
+    ...sandbox,
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-background-networking',

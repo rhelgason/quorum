@@ -12,6 +12,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -42,6 +43,7 @@ jobs:
   # pass here is a genuine pass. See tools/size.
   size:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -58,6 +60,9 @@ jobs:
   # unverified for a week in the first place.
   browser:
     runs-on: ubuntu-latest
+    # A browser that cannot start tends to hang rather than exit, so the
+    # wall clock is the backstop. The suite takes about ten seconds.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
