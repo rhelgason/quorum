@@ -167,7 +167,7 @@ and why they are in v0.1.
 
 ## Status
 
-Early, and further along than most things at this stage. **1,155 tests, zero
+Early, and further along than most things at this stage. **1,156 tests, zero
 runtime dependencies.**
 
 | Package | State |
@@ -244,7 +244,7 @@ examples/
 ```
 
 ```bash
-npm test              # 1,155 tests, no install required
+npm test              # 1,156 tests, no install required
 npm run app           # the demo product + ingest + ranked backlog
 npm run demo          # import a support inbox, print a ranked backlog
 npm run northwind     # the pipeline at scale; regenerates the figures above
