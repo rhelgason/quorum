@@ -92,9 +92,17 @@ run before that was noticed.
 > and will not start: a macOS Mach bootstrap denial, unrelated to Quorum, that
 > kills it before it prints a DevTools endpoint. Run it on a normal machine.
 >
-> It has been, four times, and the last one was CI: **26 passed, 0 skipped**,
-> on a real Chrome on a GitHub runner. It now runs on every push, so the DOM
-> layer is continuously verified rather than verified when someone remembers.
+> It has been, four times, and one of those was CI: **26 passed, 0 skipped**,
+> on a real Chrome on a GitHub runner. That run is what verified the element
+> picker.
+>
+> **The CI job is flaky.** Of three runs it passed once and hung twice on
+> `npm run test:browser` until the timeout killed it. `--disable-dev-shm-usage`
+> and `--no-sandbox` were added after the first hang and did not prevent the
+> second, so the cause is not understood. The job is `continue-on-error` and
+> bounded at ten minutes — informational, not a gate. Treat a hung run as
+> "look at it", not "the code is broken", and if it reproduces locally that is
+> the fastest path to a diagnosis.
 >
 > The earlier runs are worth reading — 1/20, then 17/20, then green — and are
 > written up in [`packages/web/README.md`](../packages/web/README.md). Every

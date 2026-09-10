@@ -58,10 +58,27 @@ jobs:
   # that fails to launch looks exactly like a machine that has none, and this
   # job would go green while testing nothing — which is how the DOM layer went
   # unverified for a week in the first place.
+  # KNOWN FLAKY — informational, does not gate the build.
+  #
+  # This job has run three times: once green (26/26, 0 skipped, ~4s of test
+  # time) and twice hanging on `npm run test:browser` until the timeout killed
+  # it. `--disable-dev-shm-usage` and `--no-sandbox` were added after the first
+  # hang and did not stop the second, so the cause is not yet understood — and
+  # GitHub does not serve logs for a job still in progress, which is what makes
+  # it awkward to diagnose. The timeout is the containment.
+  #
+  # It is left running rather than deleted because when it passes it is the
+  # only thing verifying the DOM layer, and its green run is what confirmed the
+  # element picker works. `continue-on-error` so a flake does not make `main`
+  # look broken; take a red or hung run here as "look at it", not "it failed".
+  #
+  # To resume: reproduce locally with a browser (`npm run test:browser`), and
+  # if it is reliable there, the difference is the runner — suspect the
+  # `after()` teardown leaving a handle open so the process never exits, which
+  # would look exactly like this.
   browser:
     runs-on: ubuntu-latest
-    # A browser that cannot start tends to hang rather than exit, so the
-    # wall clock is the backstop. The suite takes about ten seconds.
+    continue-on-error: true
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

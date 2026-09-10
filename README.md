@@ -176,7 +176,7 @@ runtime dependencies.**
 | `@quorum/aggregate` | ✅ TF-IDF clustering, write-time assignment, offline consolidation, split/outlier proposals, SimHash/LSH, explainable ranking |
 | `@quorum/node` | ✅ CSV/inbox import, exception capture, protocol ingest, ranked read API |
 | `@quorum/api` | ✅ `node:http` ingest + read, durable append-only log, rate limiting. **Not Postgres** |
-| `@quorum/web` | ✅ `<quorum-nub>` wired end to end — identify, route/version tagging, redaction, offline queue, element picker, frustration detection. Rendering covered by a 26-test browser suite driving a real Chrome — green in CI on every push |
+| `@quorum/web` | ✅ `<quorum-nub>` wired end to end — identify, route/version tagging, redaction, offline queue, element picker, frustration detection. Rendering covered by a 26-test browser suite driving a real Chrome — 26/26 green, though the CI job itself is flaky (see [TESTING](docs/TESTING.md)) |
 | `@quorum/eval` | ✅ Labeled corpus, clustering + rank-agreement metrics, hybrid embedding sweep |
 | `@quorum/react` | ⛔ Not started |
 
