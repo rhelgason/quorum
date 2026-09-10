@@ -181,8 +181,10 @@ runtime dependencies.**
 | `@quorum/react` | ⛔ Not started |
 
 **The two honest gaps.** No real embedding model has ever been measured, so the
-ranked list recovers 5 of the correct top 10 against a proven ceiling of 10/10
-— the harness is built and waiting for a model. And **nothing here has been
+ranked list recovers 5 of the correct top 10 against a proven ceiling of 10/10.
+The harness is built and waiting — `ollama pull nomic-embed-text`, three env
+vars, and `npm run eval` answers it
+([how](packages/eval/README.md#unblocking-this-in-five-minutes)). And **nothing here has been
 used by a real person yet.**
 
 **Not built:** framework wrappers, DOM capture, presigned capture upload,
@@ -247,6 +249,7 @@ npm run app           # the demo product + ingest + ranked backlog
 npm run demo          # import a support inbox, print a ranked backlog
 npm run northwind     # the pipeline at scale; regenerates the figures above
 npm run eval          # clustering baselines + rank agreement
+npm run mock-model    # a fake embeddings endpoint, to check your config first
 npm run size          # the 15KB budget — 13.0KB today, as an upper bound
 npm run test:browser  # the DOM suite; needs a Chromium-family browser
 ```

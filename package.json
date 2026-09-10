@@ -22,6 +22,7 @@
     "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude='**/cli.ts' --test-coverage-exclude='**/nub.ts' --test-coverage-exclude='**/browser.ts' --test-coverage-exclude='**/*.browser.test.ts' --test-coverage-lines=90 --test-coverage-branches=85 --test-coverage-functions=90 'packages/*/src/**/*.test.ts' 'services/*/src/**/*.test.ts' 'tools/*/src/**/*.test.ts' 'examples/*/*.test.ts'",
     "test:browser": "QUORUM_BROWSER_REQUIRED=1 node --test 'packages/web/src/nub.browser.test.ts'",
     "eval": "node packages/eval/src/cli.ts",
+    "mock-model": "node packages/eval/src/mock-model.ts",
     "demo": "node examples/support-inbox/demo.ts",
     "serve": "node services/api/src/cli.ts",
     "app": "node examples/saas-app/start.ts",

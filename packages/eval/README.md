@@ -257,6 +257,40 @@ marks over-merged cells with `!`, and refuses to let one win —
 When a run tells you a model is worth `+N`, check the cluster count in the
 winning cell before believing it.
 
+### Unblocking this in five minutes
+
+You need a local model. Ollama is the easiest:
+
+```bash
+brew install ollama          # or download from ollama.com
+ollama serve                 # leave running; usually already a background service
+ollama pull nomic-embed-text # ~275MB, and free
+
+QUORUM_EMBED_PROVIDER=ollama \
+QUORUM_EMBED_BASE_URL=http://127.0.0.1:11434/v1 \
+QUORUM_EMBED_MODEL=nomic-embed-text \
+  npm run eval
+```
+
+`/v1` matters — that is Ollama's OpenAI-compatible surface, and the adapter
+posts to `{base}/embeddings`. Any other endpoint speaking that shape works
+identically: LM Studio, llama.cpp's server, vLLM, or a hosted provider with
+`QUORUM_EMBED_API_KEY` set.
+
+**Check the wiring first if anything misbehaves.** `npm run mock-model` serves
+a real HTTP endpoint in the same shape, so you can confirm the URL, the request
+format and the batching before blaming the model:
+
+```bash
+npm run mock-model    # one shell
+QUORUM_EMBED_PROVIDER=mock QUORUM_EMBED_BASE_URL=http://127.0.0.1:11500/v1 \
+  QUORUM_EMBED_MODEL=whatever npm run eval    # another
+```
+
+A sweep that works against the mock and fails against Ollama is a URL or a
+model problem, not a plumbing one. (The mock's vectors are a hash, so its
+*scores* mean nothing — see below.)
+
 ### The stand-in is not a model
 
 `QUORUM_EMBED_PROVIDER=stand-in` is the hashing trick: tokens hashed into a

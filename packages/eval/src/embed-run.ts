@@ -19,7 +19,7 @@ import { embedderFromEnv, type Embedder } from '../../aggregate/src/embed.ts';
 import { cachingEmbedder, createHashingEmbedder } from '../../aggregate/src/embed-cache.ts';
 import type { EmbeddingCache } from '../../aggregate/src/embed-cache.ts';
 
-export type EmbedderKind = 'model' | 'stand-in' | 'none';
+export type EmbedderKind = 'model' | 'stand-in' | 'mock' | 'none';
 
 export interface ResolvedEmbedder {
   kind: EmbedderKind;
@@ -30,6 +30,17 @@ export interface ResolvedEmbedder {
 
 /** The value of `QUORUM_EMBED_PROVIDER` that selects the stand-in. */
 export const STAND_IN = 'stand-in';
+
+/**
+ * The value that means "I am pointing at `npm run mock-model`".
+ *
+ * Recognised by name so the report cannot call it a real measurement. The mock
+ * goes over real HTTP through the real adapter — which is the whole point of
+ * it — so nothing else here can tell it apart from Ollama, and a run that
+ * quietly claimed a hash function's scores were a model's would be the exact
+ * failure this file's ordering was written to prevent.
+ */
+export const MOCK = 'mock';
 
 export function resolveEmbedder(
   env: Record<string, string | undefined> = process.env,
@@ -51,10 +62,23 @@ export function resolveEmbedder(
 
   const embedder = embedderFromEnv(env, fetchImpl);
   if (embedder !== undefined) {
+    const where = env['QUORUM_EMBED_BASE_URL'] ?? '(unset)';
+
+    if (provider === MOCK) {
+      return {
+        kind: 'mock',
+        embedder,
+        provenance:
+          `mock endpoint at ${where} — a WIRING CHECK, not a measurement. ` +
+          'It serves hash vectors over the real adapter, so it proves the URL, ' +
+          'request shape and batching work. Its scores mean nothing.',
+      };
+    }
+
     return {
       kind: 'model',
       embedder,
-      provenance: `model "${embedder.name}" at ${env['QUORUM_EMBED_BASE_URL'] ?? '(unset)'} — real measurement.`,
+      provenance: `model "${embedder.name}" at ${where} — real measurement.`,
     };
   }
 

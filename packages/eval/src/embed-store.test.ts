@@ -14,7 +14,7 @@ import { join } from 'node:path';
 
 import { cacheKey, createHashingEmbedder } from '../../aggregate/src/embed-cache.ts';
 import { openEmbeddingCache } from './embed-store.ts';
-import { embedCorpus, resolveEmbedder, STAND_IN } from './embed-run.ts';
+import { embedCorpus, MOCK, resolveEmbedder, STAND_IN } from './embed-run.ts';
 
 let dir: string;
 
@@ -126,6 +126,21 @@ describe('resolveEmbedder', () => {
     });
     assert.equal(resolved.kind, 'model');
     assert.match(resolved.provenance, /real measurement/);
+  });
+
+  it('refuses to call the mock endpoint a measurement', () => {
+    const resolved = resolveEmbedder({
+      QUORUM_EMBED_PROVIDER: MOCK,
+      QUORUM_EMBED_BASE_URL: 'http://127.0.0.1:11500/v1',
+      QUORUM_EMBED_MODEL: 'whatever',
+    });
+
+    // It goes over real HTTP through the real adapter, so nothing else can
+    // tell it apart from Ollama. Reporting hash vectors as a model's numbers
+    // is the exact failure the provenance line exists to prevent.
+    assert.equal(resolved.kind, 'mock');
+    assert.match(resolved.provenance, /WIRING CHECK/);
+    assert.ok(!/real measurement/.test(resolved.provenance));
   });
 
   it('is none when a provider is named but half-configured', () => {
